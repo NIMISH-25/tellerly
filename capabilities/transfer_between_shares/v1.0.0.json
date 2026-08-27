@@ -192,7 +192,7 @@
     {
       "kind": "checkpoint",
       "id": "s04-checkpoint",
-      "description": "Signed in and on member search page",
+      "description": "Verify we are on the Member Search page after sign-in",
       "condition": {
         "url_path_matches": "/search",
         "text_visible": "Member Search",
@@ -285,7 +285,7 @@
     {
       "kind": "checkpoint",
       "id": "s07-checkpoint",
-      "description": "Opened member record and viewing action panel",
+      "description": "Verify member record page for {{input.member_id}}",
       "condition": {
         "url_path_matches": "/member/{{input.member_id}}",
         "text_visible": "Member Record",
@@ -521,7 +521,7 @@
     {
       "kind": "checkpoint",
       "id": "s13-checkpoint",
-      "description": "Transfer posted and confirmation number is visible",
+      "description": "Verify transfer posted successfully",
       "condition": {
         "url_path_matches": "/member/{{input.member_id}}",
         "text_visible": "TRANSFER POSTED",
@@ -731,15 +731,15 @@
     "escalation_timeout_s": 300.0
   },
   "provenance": {
-    "discovery_run_id": "discovery-20260827T183726Z-8c5b11",
-    "recorded_at": "2026-08-27T18:38:52.665782Z",
+    "discovery_run_id": "discovery-20260827T195553Z-145d8b",
+    "recorded_at": "2026-08-27T19:57:25.370293Z",
     "model": "gemini-3.5-flash-lite",
     "discovery_economics": {
-      "llm_calls": 16,
-      "input_tokens": 76845,
-      "output_tokens": 705,
-      "cost_usd": 0.121612,
-      "wall_time_s": 86.28
+      "llm_calls": 17,
+      "input_tokens": 86848,
+      "output_tokens": 761,
+      "cost_usd": 0.137121,
+      "wall_time_s": 91.93
     },
     "notes": "Recorded against http://127.0.0.1:8000"
   }

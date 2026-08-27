@@ -19,11 +19,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from tellerly.schema import ActionType, FrameRef, SurfaceFeature
-from tellerly.schema.locators import Rung
+from tellerly.schema.locators import LocatorStrategy, Rung, Target
 
 
 class ControlFacts(BaseModel):
@@ -72,6 +73,23 @@ class ProbeResult(BaseModel):
     is_target: bool                   # count == 1 AND it is the probed control
 
 
+class Resolution(BaseModel):
+    """The outcome of walking a target's ladder at replay time.
+
+    ``strategy``/``rung_index`` record which rung actually matched — the raw
+    drift-telemetry signal — so a run that succeeded via a fallback rung is
+    visibly different from one that matched the top rung.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["resolved", "not_found", "ambiguous", "verify_failed"]
+    uid: str | None = None
+    strategy: LocatorStrategy | None = None
+    rung_index: int | None = None     # index in the LADDER, 0-based
+    detail: str = ""                  # per-rung notes: why each rung was passed over
+
+
 class Surface(ABC):
     """The perceive/act contract. One implementation exists today (Playwright
     web); the seam is what a legacy-web or desktop implementation would fill.
@@ -99,6 +117,12 @@ class Surface(ABC):
         """Measure a candidate locator against the live page."""
 
     @abstractmethod
+    def resolve(self, target: Target) -> Resolution:
+        """Walk the target's ladder (bindings already substituted by the
+        caller) and return a handle to the first rung that matches exactly one
+        element AND passes the target's verify predicate."""
+
+    @abstractmethod
     def read_text(self, uid: str) -> str: ...
 
     @abstractmethod
@@ -118,6 +142,12 @@ class Surface(ABC):
 
     @abstractmethod
     def current_url(self) -> str: ...
+
+    def frame_urls(self) -> list[str]:
+        """Every document URL currently loaded — the top page plus frames.
+        Policy checks cover all of them: an action lands wherever its frame
+        is, not where the address bar points. Default suits frameless fakes."""
+        return [self.current_url()]
 
     @abstractmethod
     def screenshot(self, path: Path) -> None: ...

@@ -118,11 +118,30 @@ tellerly capabilities list
 tellerly capabilities show transfer_between_shares
 ```
 
-Deterministic replay of the saved artifact is the next build:
+**Deterministically replay** the saved capability with new inputs — zero
+model calls, a different member than was recorded (PowerShell shown; same
+`env:` convention keeps the secret off the command line):
 
-```bash
-tellerly replay transfer_between_shares
+```powershell
+$env:TELLERLY_TARGET_ACCESS_KEY = "demo"; tellerly replay transfer_between_shares -i operator_id=op-replay -i access_key=env:TELLERLY_TARGET_ACCESS_KEY -i member_id=101556 -i from_share=S00 -i to_share=S01 -i amount=15.00 --approve
 ```
+
+`--approve` authorizes the run's mutating step (the confirm click); without
+it the replay stops with `policy_blocked` *before* posting anything —
+`require_confirmation` ships on. Exit codes: 0 = SUCCESS (outputs printed),
+3 = a business outcome ("no such member" is an answer, not a crash),
+6 = hard failure with step / expected / observed / screenshot evidence.
+
+See the taxonomy in action by varying inputs — each ends the run with a
+typed, evidenced result:
+
+| Change | Result | Exit |
+|---|---|---|
+| `member_id=99999` | BUSINESS_OUTCOME `no_such_record` | 3 |
+| `from_share=S02` (member 101555) | BUSINESS_OUTCOME `operation_refused` (hold) | 3 |
+| `amount=99999.00` | BUSINESS_OUTCOME `insufficient_funds` | 3 |
+| `member_id=55555` | HARD_FAILURE `permission_denied` (+ escalation-seam note) | 6 |
+| omit `--approve` | HARD_FAILURE `policy_blocked`, nothing posted | 6 |
 
 ### What discovery looks like under the hood
 

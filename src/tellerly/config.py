@@ -13,6 +13,19 @@ REPO_ROOT = _computed_root if (_computed_root / "target_app").is_dir() else Path
 DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 
+def repo_relative(path: Path | str) -> str:
+    """Repo-root-relative POSIX-style form when the path lives in the repo.
+
+    Results and evidence store THIS form, so committed artifacts stay
+    meaningful when the repo is cloned to another machine; paths outside the
+    repo (e.g. test tmp dirs) fall back to their absolute form.
+    """
+    try:
+        return Path(path).resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 @dataclass(frozen=True)
 class Settings:
     repo_root: Path

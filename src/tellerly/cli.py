@@ -128,18 +128,93 @@ def discover(
 
 @app.command()
 def replay(
-    capability: str = typer.Argument(..., help="Capability id to replay."),
+    capability_id: str = typer.Argument(..., metavar="CAPABILITY_ID", help="Capability id to replay."),
+    inputs: list[str] = typer.Option(
+        [],
+        "--input",
+        "-i",
+        help="Input as key=value (repeatable). A value of the form env:VARNAME "
+        "is read from the environment — how secrets stay off the command line.",
+    ),
+    version: Optional[str] = typer.Option(None, "--version", help="Capability version (default: latest)."),
+    target: Optional[str] = typer.Option(None, "--target", help="Target base URL (default: TELLERLY_TARGET_URL)."),
+    headed: bool = typer.Option(False, "--headed", help="Show the browser during replay."),
+    approve: bool = typer.Option(False, "--approve", help="Authorize this run's mutating steps."),
 ) -> None:
-    """Deterministically replay a saved capability. [not built yet]"""
-    console.print(
-        Panel(
-            f"Capability: {capability}\n\n"
-            "The replay engine is the next build; discovery and the capability "
-            "catalog are live.",
-            title="replay — not built yet",
-        )
+    """Deterministically replay a saved capability — zero model calls."""
+    import os
+
+    from tellerly.kernel.guardrails import DeploymentPolicy, PolicyGate
+    from tellerly.kernel.store import CapabilityStore
+    from tellerly.replay import ReplayEngine
+    from tellerly.schema import Tier
+    from tellerly.surface.web import PlaywrightWebSurface
+
+    settings = load_settings()
+    try:
+        cap = CapabilityStore(settings.capabilities_dir).load(capability_id, version)
+    except FileNotFoundError as exc:
+        error_console.print(str(exc))
+        raise typer.Exit(1)
+
+    params: dict[str, str] = {}
+    for item in inputs:
+        key, sep, value = item.partition("=")
+        if not sep or not key:
+            error_console.print(f"--input takes key=value, got {item!r}")
+            raise typer.Exit(2)
+        if value.startswith("env:"):
+            resolved = os.environ.get(value[4:])
+            if resolved is None:
+                error_console.print(f"input '{key}': environment variable '{value[4:]}' is not set")
+                raise typer.Exit(2)
+            value = resolved
+        params[key] = value
+
+    # The INTERSECTION gate: the artifact can only narrow the deployment policy.
+    policy = DeploymentPolicy.from_yaml(settings.repo_root / "config" / "policy.yaml")
+    gate = PolicyGate(policy, cap.safety)
+    surface = PlaywrightWebSurface(
+        headless=not headed, step_timeout_s=cap.limits.step_timeout_s
     )
-    raise typer.Exit(2)
+    engine = ReplayEngine(
+        surface=surface,
+        gate=gate,
+        evidence_root=settings.evidence_dir,
+        approve_mutations=approve,
+    )
+    try:
+        result = engine.run(cap, params, target or settings.target_base_url)
+    finally:
+        try:
+            surface.close()
+        except Exception:
+            pass  # a dead browser must not mask the result
+
+    table = Table(title=f"replay: {result.status.value}", title_style="bold")
+    table.add_column("field")
+    table.add_column("value")
+    table.add_row("capability", f"{result.capability_id} v{result.capability_version}")
+    table.add_row("run", result.run_id)
+    if result.outcome is not None:
+        table.add_row(
+            "outcome",
+            f"{result.outcome.outcome_id} ({result.outcome.code.value}): {result.outcome.message}",
+        )
+    if result.failure is not None:
+        table.add_row("failure", f"{result.failure.code.value} at {result.failure.step_id or 'run'}")
+        table.add_row("expected", result.failure.expected)
+        table.add_row("observed", result.failure.observed)
+    for name, value in (result.outputs or {}).items():
+        table.add_row(f"output {name}", str(value))
+    table.add_row("steps", str(len(result.steps)))
+    table.add_row("llm calls", str(result.economics.llm_calls))
+    table.add_row("cost", f"${result.economics.cost_usd:.2f}")
+    table.add_row("wall time", f"{result.economics.wall_time_s:.1f}s")
+    table.add_row("evidence", result.evidence_dir or "—")
+    console.print(table)
+
+    raise typer.Exit({Tier.SUCCESS: 0, Tier.BUSINESS_OUTCOME: 3}.get(result.status, 6))
 
 
 @caps_app.command(name="list")

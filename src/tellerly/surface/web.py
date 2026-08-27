@@ -10,6 +10,7 @@ nothing above the seam can record one.
 """
 from __future__ import annotations
 
+import json
 import re
 import time
 from pathlib import Path
@@ -17,15 +18,24 @@ from urllib.parse import urljoin, urlparse
 
 from tellerly.schema import ActionType, FrameRef, SurfaceFeature
 from tellerly.schema.locators import (
+    AmbiguityPolicy,
     AnchorRung,
     CssRung,
     LabelRung,
+    LocatorStrategy,
     NameRung,
     RoleRung,
     Rung,
+    Target,
     TextRung,
 )
-from tellerly.surface.base import ControlFacts, PageObservation, ProbeResult, Surface
+from tellerly.surface.base import (
+    ControlFacts,
+    PageObservation,
+    ProbeResult,
+    Resolution,
+    Surface,
+)
 
 _CONTROL_QUERY = "input, select, textarea, button, a[href]"
 _MAX_CONTROLS = 80
@@ -92,6 +102,47 @@ _ANCHOR_JS = """
   }
   const unique = [...new Set(picks)];
   return {count: unique.length, is: target !== null && unique.length === 1 && unique[0] === target};
+}
+"""
+
+# The element behind _ANCHOR_JS's count: same anchors, same dedup, but returns
+# the nth unique pick itself (resolve needs the element; probe only needs the
+# measurement). Kept textually parallel to _ANCHOR_JS so they cannot drift.
+_ANCHOR_PICK_JS = """
+(args) => {
+  const anchors = [...document.querySelectorAll('td,th,label,b,font,span,legend')]
+    .filter(e => (e.innerText || '').trim() === args.anchor && !e.querySelector(args.control));
+  const controls = [...document.querySelectorAll(args.control)];
+  const picks = [];
+  for (const a of anchors) {
+    const after = controls.filter(c => a.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (after.length > args.offset) picks.push(after[args.offset]);
+  }
+  const unique = [...new Set(picks)];
+  return unique.length > args.pick ? unique[args.pick] : null;
+}
+"""
+
+# The verify predicate, evaluated against the RESOLVED element: cheap identity
+# checks so a degraded rung cannot silently match a similar-looking control.
+# Returns the list of failed assertions (empty = verified).
+_VERIFY_JS = """
+([el, verify]) => {
+  const problems = [];
+  const tag = el.tagName.toLowerCase();
+  if (verify.control && tag !== verify.control.toLowerCase()) {
+    problems.push(`control is '${tag}', expected '${verify.control}'`);
+  }
+  if (verify.name_attr && el.getAttribute('name') !== verify.name_attr) {
+    problems.push(`name attribute is '${el.getAttribute('name')}', expected '${verify.name_attr}'`);
+  }
+  if (verify.text_contains) {
+    const text = (el.innerText || el.value || '');
+    if (!text.includes(verify.text_contains)) {
+      problems.push(`text does not contain '${verify.text_contains}'`);
+    }
+  }
+  return problems;
 }
 """
 
@@ -262,25 +313,7 @@ class PlaywrightWebSurface(Surface):
             )
             return ProbeResult(count=result["count"], is_target=bool(result["is"]))
 
-        if isinstance(rung, RoleRung):
-            locator = target_frame.get_by_role(rung.role, name=rung.name, exact=True)
-        elif isinstance(rung, LabelRung):
-            locator = target_frame.get_by_label(rung.label, exact=True)
-        elif isinstance(rung, NameRung):
-            import json as _json
-
-            locator = target_frame.locator(f"[name={_json.dumps(rung.name)}]")
-        elif isinstance(rung, TextRung):
-            if rung.control:
-                pattern = re.compile(rf"^\s*{re.escape(rung.text)}\s*$")
-                locator = target_frame.locator(rung.control).filter(has_text=pattern)
-            else:
-                locator = target_frame.get_by_text(rung.text, exact=True)
-        elif isinstance(rung, CssRung):
-            locator = target_frame.locator(rung.css)
-        else:  # pragma: no cover — the union is closed
-            raise ValueError(f"unknown rung type {type(rung).__name__}")
-
+        locator = self._rung_locator(target_frame, rung)
         count = locator.count()
         is_target = False
         if count == 1 and target_handle is not None:
@@ -289,6 +322,62 @@ class PlaywrightWebSurface(Surface):
                 target_frame.evaluate("([a, b]) => a === b", [matched, target_handle])
             )
         return ProbeResult(count=count, is_target=is_target)
+
+    def resolve(self, target: Target) -> Resolution:
+        """Walk the ladder in recorded order; the first rung that matches one
+        element and passes verify wins. The target arrives with bindings
+        already substituted — the replay engine owns substitution."""
+        frame = self._resolve_frame(target.frame)
+        if frame is None:
+            wanted = " > ".join(ref.name or ref.url_path or "?" for ref in target.frame)
+            return Resolution(status="not_found", detail=f"frame path '{wanted}' not found")
+
+        notes: list[str] = []
+        verify_rejected = False
+        for index, rung in enumerate(target.ladder):
+            strategy = LocatorStrategy(rung.strategy)
+            count, element = self._rung_matches(frame, rung, target.on_ambiguous)
+            if count == 0:
+                notes.append(f"rung {index} ({strategy.value}): no match")
+                continue
+            if count > 1 and target.on_ambiguous is AmbiguityPolicy.FAIL:
+                notes.append(f"rung {index} ({strategy.value}): {count} matches")
+                return Resolution(
+                    status="ambiguous",
+                    strategy=strategy,
+                    rung_index=index,
+                    detail="; ".join(notes),
+                )
+            if element is None:
+                # Matched a moment ago, gone by capture — a mid-render swap.
+                # "Not there any more" reads as "no match" for this rung.
+                notes.append(f"rung {index} ({strategy.value}): detached before capture")
+                continue
+            problems = frame.evaluate(
+                _VERIFY_JS,
+                [
+                    element,
+                    {
+                        "control": target.verify.control,
+                        "name_attr": target.verify.name_attr,
+                        "text_contains": target.verify.text_contains,
+                    },
+                ],
+            )
+            if problems:
+                verify_rejected = True
+                notes.append(
+                    f"rung {index} ({strategy.value}): verify rejected — " + "; ".join(problems)
+                )
+                continue
+            uid = f"o{self._observation_generation}r{len(self._handles)}"
+            self._handles[uid] = (frame, element)
+            return Resolution(status="resolved", uid=uid, strategy=strategy, rung_index=index)
+
+        # Verify rejections outrank plain misses in the diagnosis: "we FOUND a
+        # control but it was the wrong kind" points at drift, not absence.
+        status = "verify_failed" if verify_rejected else "not_found"
+        return Resolution(status=status, detail="; ".join(notes))
 
     def read_text(self, uid: str) -> str:
         _, handle = self._require(uid)
@@ -344,6 +433,16 @@ class PlaywrightWebSurface(Surface):
     def current_url(self) -> str:
         return self._page.url
 
+    def frame_urls(self) -> list[str]:
+        urls = []
+        for frame in self._page.frames:
+            if frame.is_detached():
+                continue
+            url = frame.url
+            if url and not url.startswith("about:"):
+                urls.append(url)
+        return urls or [self._page.url]
+
     def screenshot(self, path: Path) -> None:
         self._page.screenshot(path=str(path), full_page=True)
 
@@ -353,6 +452,52 @@ class PlaywrightWebSurface(Surface):
         self._playwright.stop()
 
     # -------------------------------------------------------------- internals
+
+    def _rung_locator(self, frame, rung: Rung):
+        """The ONE builder for non-anchor rung locators — probe() measures with
+        it and resolve() acts with it, so record-time confidence and replay
+        behaviour can never disagree about what a rung means."""
+        if isinstance(rung, RoleRung):
+            return frame.get_by_role(rung.role, name=rung.name, exact=True)
+        if isinstance(rung, LabelRung):
+            return frame.get_by_label(rung.label, exact=True)
+        if isinstance(rung, NameRung):
+            return frame.locator(f"[name={json.dumps(rung.name)}]")
+        if isinstance(rung, TextRung):
+            if rung.control:
+                pattern = re.compile(rf"^\s*{re.escape(rung.text)}\s*$")
+                return frame.locator(rung.control).filter(has_text=pattern)
+            return frame.get_by_text(rung.text, exact=True)
+        if isinstance(rung, CssRung):
+            return frame.locator(rung.css)
+        raise ValueError(f"unknown rung type {type(rung).__name__}")  # pragma: no cover
+
+    def _rung_matches(self, frame, rung: Rung, on_ambiguous: AmbiguityPolicy):
+        """Match count for a rung plus the element to take (the unique match,
+        or the first when the FIRST policy makes >1 legal). Element is None
+        when there is nothing legal to take."""
+        if isinstance(rung, AnchorRung):
+            args = {"anchor": rung.anchor_text, "control": rung.control, "offset": rung.offset}
+            # _ANCHOR_JS already computes the count; a null target skips the
+            # identity half that only probe() needs.
+            count = frame.evaluate(_ANCHOR_JS, [args, None])["count"]
+            element = None
+            if count == 1 or (count > 1 and on_ambiguous is AmbiguityPolicy.FIRST):
+                handle = frame.evaluate_handle(_ANCHOR_PICK_JS, {**args, "pick": 0})
+                element = handle.as_element()
+            return count, element
+
+        locator = self._rung_locator(frame, rung)
+        count = locator.count()
+        element = None
+        if count == 1 or (count > 1 and on_ambiguous is AmbiguityPolicy.FIRST):
+            try:
+                # Bounded: the default timeout would stall a whole retry budget
+                # on an element that vanished between count() and capture.
+                element = locator.first.element_handle(timeout=2000)
+            except Exception:
+                element = None
+        return count, element
 
     def _require(self, uid: str) -> tuple[object, object]:
         if uid not in self._handles:

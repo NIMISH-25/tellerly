@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
+from tellerly.config import repo_relative
 from tellerly.discovery.compiler import CompileError, compile_capability, load_outcome_catalog
 from tellerly.discovery.job import JobSpec
 from tellerly.discovery.planner import Planner, ToolCall
@@ -161,10 +162,10 @@ class DiscoveryEngine:
             run_id=self.run_id,
             goal=self.job.goal,
             status=status,
-            artifact_path=artifact_path,
+            artifact_path=repo_relative(artifact_path) if artifact_path else None,
             steps_taken=len(self.steps),
             economics=economics,
-            evidence_dir=str(self.log.dir),
+            evidence_dir=repo_relative(self.log.dir),
         )
         self.log.write_json(
             "trace.json", {"steps": [step.model_dump(mode="json") for step in self.steps]}
@@ -281,6 +282,15 @@ class DiscoveryEngine:
         url_contains = args.get("url_path_contains")
         if not text_visible and not url_contains:
             return "ERROR: assert_state needs text_visible and/or url_path_contains", None
+        if text_visible and self._pins_run_specific_value(text_visible):
+            # A confirmation number or read-back value proves THIS run, not the
+            # flow — a checkpoint built on it can never hold for any other run.
+            return (
+                "ERROR: that text is a run-specific value (an output of this run) — "
+                "assert a stable marker instead (a heading or label such as "
+                "'TRANSFER POSTED')",
+                None,
+            )
 
         holds = True
         observed = []
@@ -338,6 +348,26 @@ class DiscoveryEngine:
         missing = sorted(set(self.job.outputs) - set(self.captured))
         if missing:
             return f"ERROR: cannot finish — outputs not captured yet: {', '.join(missing)}", None
+        # Backstop for asserts made BEFORE the pinning value was read: discard
+        # any checkpoint that turns out to assert a run-specific output value.
+        pinned = [
+            step
+            for step in self.steps
+            if isinstance(step, CheckpointStep)
+            and step.condition.text_visible
+            and self._pins_run_specific_value(step.condition.text_visible)
+        ]
+        if pinned:
+            for step in pinned:
+                self.steps.remove(step)
+                self.checkpoints_held -= 1
+            ids = ", ".join(step.id for step in pinned)
+            return (
+                f"ERROR: checkpoint(s) {ids} asserted run-specific values and were "
+                "discarded — assert_state a stable marker (a heading or label) for "
+                "the goal state, then finish",
+                None,
+            )
         if self.checkpoints_held == 0:
             return "ERROR: cannot finish — no assertion has held; assert the goal state first", None
         return f"finished: {args.get('summary', '')}", DiscoveryStatus.GOAL_MET
@@ -366,6 +396,14 @@ class DiscoveryEngine:
             ):
                 return outcome
         return None
+
+    def _pins_run_specific_value(self, text: str) -> bool:
+        """True when the (substituted) text contains a value captured as an
+        output this run — e.g. this run's confirmation number."""
+        resolved = substitute(text, self.values)
+        return any(
+            len(value) >= 4 and value in resolved for value in self.captured.values()
+        )
 
     def _pending_note(self) -> str:
         """Keeps the contract in front of the planner: declared outputs that are
@@ -447,8 +485,9 @@ class DiscoveryEngine:
                 "- After each meaningful transition, assert_state what you expect.",
                 "- Assertions become replay checkpoints for OTHER runs with OTHER",
                 "  input values: assert stable page markers (headings, labels) or",
-                "  {{input.name}} placeholders — never record-specific data like a",
-                "  person's name or an account balance.",
+                "  {{input.name}} placeholders — never record-specific data such as",
+                "  a person's name, an account balance, or a value you just read",
+                "  (e.g. a confirmation number).",
                 "- Dismissible notices (e.g. maintenance) can be clicked through.",
                 "- If your session expires, sign in again and continue.",
                 "- Before finish: assert the goal state and read every output.",
@@ -482,7 +521,9 @@ class DiscoveryEngine:
             ),
         )
         path = self.store.save(capability)
-        self.log.event("capability_saved", path=str(path), version=capability.version)
+        self.log.event(
+            "capability_saved", path=repo_relative(path), version=capability.version
+        )
         return path
 
 

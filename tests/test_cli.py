@@ -20,10 +20,10 @@ def test_help_lists_the_seams():
         assert command in result.output
 
 
-def test_replay_seam_exits_nonzero_and_says_why():
-    result = runner.invoke(app, ["replay", "some_capability"])
-    assert result.exit_code == 2
-    assert "not built yet" in result.output
+def test_replay_unknown_capability_exits_nonzero_and_says_why():
+    result = runner.invoke(app, ["replay", "no_such_capability"])
+    assert result.exit_code == 1
+    assert "no capability 'no_such_capability'" in result.output
 
 
 def test_discover_requires_a_job_spec():

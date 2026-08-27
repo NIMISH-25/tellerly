@@ -67,6 +67,8 @@ class Code(str, Enum):
     INPUT_INVALID = "input_invalid"                # supplied params fail the input contract
     ESCALATION_TIMEOUT = "escalation_timeout"      # no operator picked up the intervention
     ABORTED_BY_OPERATOR = "aborted_by_operator"    # human chose to abort the run
+    EXECUTION_ERROR = "execution_error"            # unexpected engine/browser fault — the
+    #                                                machinery broke, not the target app
 
 
 #: The tier a code carries while being handled. Total over Code (tested).
@@ -91,6 +93,7 @@ DEFAULT_TIER: dict[Code, Tier] = {
     Code.INPUT_INVALID: Tier.HARD_FAILURE,
     Code.ESCALATION_TIMEOUT: Tier.HARD_FAILURE,
     Code.ABORTED_BY_OPERATOR: Tier.HARD_FAILURE,
+    Code.EXECUTION_ERROR: Tier.HARD_FAILURE,
 }
 
 #: Bounded retry may clear these. All are RECOVERABLE-tier by construction.
@@ -126,6 +129,8 @@ TERMINAL: frozenset[Code] = frozenset(
         Code.INPUT_INVALID,
         Code.ESCALATION_TIMEOUT,
         Code.ABORTED_BY_OPERATOR,
+        Code.EXECUTION_ERROR,  # retrying broken machinery re-runs the break;
+        #                        a human can't unblock an engine bug either
     }
 )
 
