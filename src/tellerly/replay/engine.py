@@ -25,14 +25,26 @@ from __future__ import annotations
 import re
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import NoReturn
 from urllib.parse import urljoin
 
 from tellerly.config import repo_relative
+from tellerly.kernel.control import (
+    ControlEvent,
+    ControlState,
+    ControlToken,
+    IllegalTransition,
+)
 from tellerly.kernel.evidence import RunLog
 from tellerly.kernel.guardrails import PolicyGate, PolicyViolation
+from tellerly.kernel.operator import (
+    NOTE_PREFIX,
+    EscalationHandler,
+    EscalationTimeout,
+    OperatorSession,
+)
 from tellerly.kernel.redaction import Redactor
 from tellerly.schema import (
     ESCALATABLE,
@@ -45,10 +57,13 @@ from tellerly.schema import (
     Economics,
     FailureDetail,
     InputType,
+    InterventionRecord,
+    InterventionRequest,
     OutcomeReport,
     OutputType,
     ReadStep,
     ReplayResult,
+    ResumeDecision,
     Risk,
     Sensitivity,
     StateCondition,
@@ -113,6 +128,15 @@ class _StepFailure(Exception):
         self.resolution = resolution
 
 
+class _SkipStep(Exception):
+    """Internal control flow only: an operator decided the pending step is
+    moot. The step loop records a SKIPPED outcome and moves on."""
+
+    def __init__(self, note: str) -> None:
+        super().__init__(note)
+        self.note = note
+
+
 class ReplayEngine:
     def __init__(
         self,
@@ -120,19 +144,29 @@ class ReplayEngine:
         gate: PolicyGate,
         evidence_root: Path,
         approve_mutations: bool = False,
+        escalation: EscalationHandler | None = None,
+        operator_name: str = "operator",
     ) -> None:
         self.surface = surface
         self.gate = gate
         self.evidence_root = evidence_root
         self.approve_mutations = approve_mutations
+        self.escalation = escalation
+        self.operator_name = operator_name
         # Per-run state; reset at the top of run().
         self._capability: Capability | None = None
         self._params: dict[str, str] = {}
         self._base_url = ""
+        self._run_id = ""
         self._log: RunLog | None = None
+        self._redactor: Redactor | None = None
         self._telemetry: list[StepOutcome] = []
         self._outputs: dict[str, str | int | float | bool] = {}
         self._current_step_id: str | None = None
+        self._token = ControlToken()
+        self._escalations: list[InterventionRecord] = []
+        self._escalated_steps: dict[str | None, bool] = {}
+        self._intervention_count = 0
 
     # ------------------------------------------------------------------- run
 
@@ -142,10 +176,16 @@ class ReplayEngine:
         self._capability = capability
         self._params = dict(params)
         self._base_url = base_url.rstrip("/")
+        self._run_id = run_id
         self._log = None
+        self._redactor = None
         self._telemetry = []
         self._outputs = {}
         self._current_step_id = None
+        self._token = ControlToken()
+        self._escalations = []
+        self._escalated_steps = {}
+        self._intervention_count = 0
 
         status = Tier.HARD_FAILURE
         outputs: dict[str, str | int | float | bool] | None = None
@@ -175,8 +215,9 @@ class ReplayEngine:
                 observed=f"{type(exc).__name__}: {exc}",
             )
 
-        if failure is not None and failure.code in ESCALATABLE:
-            # The handoff milestone plugs in at this exact seam.
+        if failure is not None and failure.code in ESCALATABLE and self.escalation is None:
+            # Non-configured runs keep the seam note; with a handler configured
+            # the real mechanism (an InterventionRecord) replaces it.
             failure.observed += " | escalation seam: a human intervention would fire here"
 
         evidence_dir = repo_relative(self._log.dir) if self._log is not None else None
@@ -198,6 +239,7 @@ class ReplayEngine:
                 outputs=outputs,
                 outcome=outcome,
                 failure=failure,
+                escalations=list(self._escalations),
                 steps=self._telemetry,
                 economics=economics,
                 evidence_dir=evidence_dir,
@@ -265,6 +307,7 @@ class ReplayEngine:
         for name, decl in capability.inputs.items():
             if decl.sensitivity is not Sensitivity.NONE and name in self._params:
                 redactor.register(name, self._params[name])
+        self._redactor = redactor  # escalations redact through the same run redactor
         self._log = RunLog(self.evidence_root, run_id, redactor)
         self._log.event(
             "run_started",
@@ -288,26 +331,23 @@ class ReplayEngine:
 
         # f. The final checkpoint, with a generous timeout.
         if self._condition_holds(capability.success, timeout_s=capability.limits.step_timeout_s):
-            missing_outputs = sorted(set(capability.outputs) - set(self._outputs))
-            if missing_outputs:
-                # Structurally unreachable (the artifact validator ties every
-                # output to a read step) — guarded so a schema change cannot
-                # silently ship a SUCCESS with holes.
-                raise _Terminal(
-                    Tier.HARD_FAILURE,
-                    failure=FailureDetail(
-                        step_id=None,
-                        code=Code.EXECUTION_ERROR,
-                        expected="every declared output captured before success",
-                        observed="missing outputs: " + ", ".join(missing_outputs),
-                    ),
-                )
-            raise _Terminal(Tier.SUCCESS, outputs=dict(self._outputs))
+            self._finish_success()
 
         # The success condition failed — the app may have said no.
         detected = self._detect_outcome()
         if detected is not None:
-            self._terminal_for_outcome(detected, step_id=None)
+            cleared = False
+            try:
+                self._terminal_for_outcome(detected, step_id=None)
+                cleared = True  # an operator cleared the declared condition
+            except _SkipStep:
+                # No pending step exists at the final gate; "skip" can only
+                # mean the operator considers the condition moot.
+                cleared = True
+            if cleared and self._condition_holds(
+                capability.success, timeout_s=capability.limits.step_timeout_s
+            ):
+                self._finish_success()
         raise _Terminal(
             Tier.HARD_FAILURE,
             failure=FailureDetail(
@@ -318,7 +358,32 @@ class ReplayEngine:
             ),
         )
 
+    def _finish_success(self) -> NoReturn:
+        missing_outputs = sorted(set(self._capability.outputs) - set(self._outputs))
+        if missing_outputs:
+            # Structurally unreachable (the artifact validator ties every
+            # output to a read step) — guarded so a schema change cannot
+            # silently ship a SUCCESS with holes.
+            raise _Terminal(
+                Tier.HARD_FAILURE,
+                failure=FailureDetail(
+                    step_id=None,
+                    code=Code.EXECUTION_ERROR,
+                    expected="every declared output captured before success",
+                    observed="missing outputs: " + ", ".join(missing_outputs),
+                ),
+            )
+        raise _Terminal(Tier.SUCCESS, outputs=dict(self._outputs))
+
     def _run_step(self, step: Step) -> None:
+        # A RETRY_STEP decision re-enters with a fresh budget and a fresh
+        # resolution; the once-per-step escalation guard makes the loop finite.
+        while self._run_step_pass(step):
+            pass
+
+    def _run_step_pass(self, step: Step) -> bool:
+        """One fully-budgeted pass at a step. Returns True only when an
+        operator decided RETRY_STEP and the step must run again from scratch."""
         self._current_step_id = step.id
         started = time.monotonic()
         budget = 1 + self._capability.limits.max_retries_per_step
@@ -377,38 +442,59 @@ class ReplayEngine:
                             time.sleep(0.5)  # transient slowness — cheapest recovery
                     continue
                 record(StepStatus.RECOVERED if recovered else StepStatus.OK, resolution)
-                return
+                return False
 
             # Budget exhausted. Final outcome scan FIRST — the app may have
             # said no, and that answer outranks any locator diagnosis.
             final = self._detect_outcome()
             if final is not None:
-                record(StepStatus.FAILED, last.resolution if last else None,
-                       note=f"declared outcome '{final.id}'")
+                if not (
+                    final.disposition is Tier.HARD_FAILURE
+                    and self._escalation_applies(step.id, final.code)
+                ):
+                    # No escalation will fire for this outcome: record now so
+                    # telemetry keeps the resolution detail and the outcome
+                    # note (the terminal catch below knows neither).
+                    record(StepStatus.FAILED, last.resolution if last else None,
+                           note=f"declared outcome '{final.id}'")
                 self._terminal_for_outcome(final, step.id)
+                # Returned: an operator cleared the declared condition after
+                # the budget was spent — the loop it interrupted is gone, so
+                # give the step a fresh pass instead.
+                return True
             if last is None:
                 # Every attempt was consumed clearing a recoverable condition
                 # that kept coming back. The status says how the run ended;
                 # the preserved code says which condition ate the budget.
                 code = last_recovered.code if last_recovered is not None else Code.EXECUTION_ERROR
+                expected = f"step '{step.id}' to execute within its retry budget"
+                observed = (
+                    f"all {budget} attempts were consumed by recoveries"
+                    + (
+                        f" for declared outcome '{last_recovered.id}'"
+                        if last_recovered is not None
+                        else ""
+                    )
+                )
+                # SESSION_EXPIRED sits in both RETRYABLE and ESCALATABLE; with
+                # the budget spent, escalation gets its turn at this exit too.
+                decision = self._maybe_escalate(step.id, code, expected, observed)
+                if decision is not None:
+                    return self._apply_step_decision(decision, step, record)
                 record(StepStatus.FAILED, None, note=code.value)
                 raise _Terminal(
                     Tier.HARD_FAILURE,
                     failure=FailureDetail(
                         step_id=step.id,
                         code=code,
-                        expected=f"step '{step.id}' to execute within its retry budget",
-                        observed=(
-                            f"all {budget} attempts were consumed by recoveries"
-                            + (
-                                f" for declared outcome '{last_recovered.id}'"
-                                if last_recovered is not None
-                                else ""
-                            )
-                        ),
+                        expected=expected,
+                        observed=observed,
                     ),
                 )
             observed = f"{last.observed} ({attempt} attempts)"
+            decision = self._maybe_escalate(step.id, last.code, last.expected, observed)
+            if decision is not None:
+                return self._apply_step_decision(decision, step, record)
             record(StepStatus.FAILED, last.resolution, note=last.code.value)
             raise _Terminal(
                 Tier.HARD_FAILURE,
@@ -416,6 +502,9 @@ class ReplayEngine:
                     step_id=step.id, code=last.code, expected=last.expected, observed=observed
                 ),
             )
+        except _SkipStep as skip:
+            record(StepStatus.SKIPPED, None, note=skip.note)
+            return False
         except _Terminal as terminal:
             record(StepStatus.FAILED, None, note=_terminal_note(terminal))
             raise
@@ -571,7 +660,11 @@ class ReplayEngine:
                 return outcome
         return None
 
-    def _terminal_for_outcome(self, outcome: DeclaredOutcome, step_id: str | None) -> NoReturn:
+    def _terminal_for_outcome(self, outcome: DeclaredOutcome, step_id: str | None) -> None:
+        """Terminal in the default: raises _Terminal. With an escalation
+        handler, a HARD_FAILURE-tier ESCALATABLE outcome is handed to a human
+        first — whose decision can make this RETURN (the condition was
+        cleared; the caller resumes its loop) or raise _SkipStep."""
         self._event(
             "outcome_detected",
             outcome=outcome.id,
@@ -586,6 +679,38 @@ class ReplayEngine:
                     outcome_id=outcome.id, code=outcome.code, message=outcome.message
                 ),
             )
+        if outcome.disposition is Tier.HARD_FAILURE:
+            decision = self._maybe_escalate(
+                step_id,
+                outcome.code,
+                "the flow to proceed past this declared condition",
+                f"declared outcome '{outcome.id}': {outcome.message}",
+            )
+            if decision is ResumeDecision.ABORT:
+                raise _Terminal(
+                    Tier.HARD_FAILURE,
+                    failure=FailureDetail(
+                        step_id=step_id,
+                        code=Code.ABORTED_BY_OPERATOR,
+                        expected="the operator to clear the blocking condition and resume",
+                        observed=self._abort_observed(),
+                    ),
+                )
+            if decision is ResumeDecision.SKIP_STEP:
+                raise _SkipStep("skipped by operator")
+            if decision is ResumeDecision.CONTINUE:
+                # Uniform meaning everywhere: CONTINUE = "I completed the
+                # pending step by hand — go on from the NEXT step". Re-running
+                # the pending step here could double-post a mutation the human
+                # already made.
+                raise _SkipStep("completed by operator")
+            if decision is ResumeDecision.RETRY_STEP:
+                # "I cleared the obstacle — run the step again": re-scan ONCE;
+                # the same hard outcome still detecting fails hard below, and
+                # the once-per-step guard forbids a second escalation.
+                still = self._detect_outcome()
+                if still is None or still.id != outcome.id:
+                    return  # cleared — the caller resumes its loop
         # HARD_FAILURE-tier outcomes terminate directly. A RECOVERABLE outcome
         # reaches here only with its retry budget spent: the status says how
         # the run ended, the code says which condition ended it.
@@ -635,6 +760,215 @@ class ReplayEngine:
             self.surface.act(resolution.uid, step.action, value)
             self.gate.check_url(self.surface.current_url())
         self._event("recovery_finished", outcome=outcome.id)
+
+    # ------------------------------------------------------------ escalation
+
+    def _escalation_applies(self, step_id: str | None, code: Code) -> bool:
+        """One intervention per step per run: a human who already answered for
+        this step is not paged again — which is also what keeps RETRY_STEP
+        (and 'CONTINUE but the condition persists') from looping forever."""
+        return (
+            self.escalation is not None
+            and code in ESCALATABLE
+            and not self._escalated_steps.get(step_id, False)
+        )
+
+    def _maybe_escalate(
+        self, step_id: str | None, code: Code, expected: str, observed: str
+    ) -> ResumeDecision | None:
+        """Hand a stuck run to a human, if one is configured and the condition
+        warrants it. Returns the operator's decision, or None when escalation
+        does not apply (caller keeps its default behavior). Raises _Terminal
+        on an unanswered deadline."""
+        if not self._escalation_applies(step_id, code):
+            return None
+        self._escalated_steps[step_id] = True
+        self._token.fire(ControlEvent.ESCALATE)
+        self._intervention_count += 1
+        n = self._intervention_count
+        now = datetime.now(timezone.utc)
+        deadline = now + timedelta(seconds=self._capability.limits.escalation_timeout_s)
+
+        dom_snapshot_path: str | None = None
+        if self._log is not None:
+            dom_file = self._log.dir / f"intervention-{n}.html"
+            try:
+                dom_file.write_text(
+                    self._redactor.redact(self.surface.dom_snapshot()), encoding="utf-8"
+                )
+                dom_snapshot_path = repo_relative(dom_file)
+            except Exception:
+                dom_snapshot_path = None  # a dead browser must not mask the escalation
+
+        request = InterventionRequest(
+            id=uuid.uuid4().hex,
+            run_id=self._run_id,
+            capability_id=self._capability.id,
+            step_id=step_id,
+            url=self.surface.current_url(),
+            reason_code=code,
+            message=f"{expected} | {observed}",
+            screenshot_path=self._screenshot(f"intervention-{n}"),
+            dom_snapshot_path=dom_snapshot_path,
+            requested_at=now,
+            deadline_at=deadline,
+        )
+        self._event(
+            "escalation_raised",
+            intervention=request.id,
+            step=step_id,
+            code=code.value,
+            url=request.url,
+            deadline_at=deadline.isoformat(),
+        )
+        # The human drives the SAME surface through the SAME gate with the
+        # SAME redactor and evidence log as automation — that is the audit
+        # story, and the engine's own ControlToken referees the handoff.
+        session = OperatorSession(
+            surface=self.surface,
+            gate=self.gate,
+            log=self._log,
+            token=self._token,
+            redactor=self._redactor,
+            deadline=deadline,
+        )
+        try:
+            decision = ResumeDecision(self.escalation.handle(request, session))
+        except EscalationTimeout as exc:
+            # TIMEOUT is an edge out of PAUSED only — a handler that never
+            # engaged. A human who took control and then let the deadline
+            # lapse abandoned a held session: that transition is an ABORT,
+            # and the recorded history says which happened. (Deviation from
+            # the literal "fire TIMEOUT" spec: the state machine has no
+            # HUMAN_CONTROL--timeout--> edge, deliberately.)
+            event = (
+                ControlEvent.TIMEOUT
+                if self._token.state is ControlState.PAUSED
+                else ControlEvent.ABORT
+            )
+            self._token.fire(event)
+            self._event(
+                "escalation_timeout",
+                intervention=request.id,
+                detail=str(exc),
+                token_history=_token_history(self._token),
+            )
+            raise _Terminal(
+                Tier.HARD_FAILURE,
+                failure=FailureDetail(
+                    step_id=step_id,
+                    code=Code.ESCALATION_TIMEOUT,
+                    expected="an operator decision before the deadline",
+                    observed=f"deadline {deadline.isoformat()} passed unanswered: {exc}",
+                ),
+            )
+        except Exception as exc:
+            # A crashed handler (or a garbage return value) must not skip the
+            # bookkeeping: the token reaches a terminal state, the intervention
+            # is recorded with a synthesized ABORT carrying whatever the human
+            # DID do, and the run reports the handler fault.
+            try:
+                self._token.fire(
+                    ControlEvent.TIMEOUT
+                    if self._token.state is ControlState.PAUSED
+                    else ControlEvent.ABORT
+                )
+            except IllegalTransition:
+                pass  # a handler that mangled the token is part of the fault
+            self._escalations.append(
+                InterventionRecord(
+                    request=request,
+                    actions=list(session.actions),
+                    decision=ResumeDecision.ABORT,
+                    resolved_at=datetime.now(timezone.utc),
+                    operator=self.operator_name,
+                )
+            )
+            self._event(
+                "escalation_failed",
+                intervention=request.id,
+                detail=f"{type(exc).__name__}: {exc}",
+                token_history=_token_history(self._token),
+            )
+            raise _Terminal(
+                Tier.HARD_FAILURE,
+                failure=FailureDetail(
+                    step_id=step_id,
+                    code=Code.EXECUTION_ERROR,
+                    expected="the escalation handler to return a decision",
+                    observed=f"handler failed: {type(exc).__name__}: {exc}",
+                ),
+            )
+        if decision is ResumeDecision.ABORT:
+            self._token.fire(ControlEvent.ABORT)
+        else:
+            self._token.fire(ControlEvent.RESUME, decision)
+        self._escalations.append(
+            InterventionRecord(
+                request=request,
+                actions=list(session.actions),
+                decision=decision,
+                resolved_at=datetime.now(timezone.utc),
+                operator=self.operator_name,
+            )
+        )
+        self._event(
+            "escalation_resolved",
+            intervention=request.id,
+            decision=decision.value,
+            token_history=_token_history(self._token),
+        )
+        return decision
+
+    def _apply_step_decision(self, decision: ResumeDecision, step: Step, record) -> bool:
+        """Turn an operator decision at a budget-exhausted step exit into
+        control flow: True re-runs the step from scratch, False moves on to
+        the next step, ABORT raises the terminal failure."""
+        if decision is ResumeDecision.ABORT:
+            raise _Terminal(
+                Tier.HARD_FAILURE,
+                failure=FailureDetail(
+                    step_id=step.id,
+                    code=Code.ABORTED_BY_OPERATOR,
+                    expected="the operator to clear the blocking condition and resume",
+                    observed=self._abort_observed(),
+                ),
+            )
+        if decision is ResumeDecision.RETRY_STEP:
+            # Re-observe FIRST: after a human touched the page nothing is
+            # assumed — the fresh pass re-resolves everything from scratch.
+            try:
+                self.surface.observe()
+            except Exception:
+                pass  # a truly dead page will surface through the fresh pass
+            return True
+        # CONTINUE: the human completed the step manually. SKIP_STEP: moot.
+        # Either way automation did not run the step — SKIPPED, with the note
+        # saying which flavour.
+        record(
+            StepStatus.SKIPPED,
+            None,
+            note=(
+                "completed by operator"
+                if decision is ResumeDecision.CONTINUE
+                else "skipped by operator"
+            ),
+        )
+        return False
+
+    def _abort_observed(self) -> str:
+        """Observed text for an operator abort, carrying the operator's
+        note(s) when any were recorded during the intervention."""
+        base = "the operator aborted the run"
+        if self._escalations:
+            notes = [
+                action.description.removeprefix(NOTE_PREFIX)
+                for action in self._escalations[-1].actions
+                if action.description.startswith(NOTE_PREFIX)
+            ]
+            if notes:
+                return base + " — " + "; ".join(notes)
+        return base
 
     # ------------------------------------------------------------ conditions
 
@@ -784,6 +1118,20 @@ def _describe_condition(condition: StateCondition) -> str:
     if condition.element_visible is not None:
         parts.append(f"element visible: {condition.element_visible.description}")
     return ", ".join(parts)
+
+
+def _token_history(token: ControlToken) -> list[dict[str, str | None]]:
+    """The control token's transition log in evidence-friendly form — how an
+    auditor (or a test) sees exactly how ownership moved during a handoff."""
+    return [
+        {
+            "from": before.value,
+            "event": event.value,
+            "to": after.value,
+            "decision": decision.value if decision is not None else None,
+        }
+        for before, event, after, decision in token.history
+    ]
 
 
 def _terminal_note(terminal: _Terminal) -> str | None:

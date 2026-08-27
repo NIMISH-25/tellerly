@@ -140,11 +140,18 @@ def replay(
     target: Optional[str] = typer.Option(None, "--target", help="Target base URL (default: TELLERLY_TARGET_URL)."),
     headed: bool = typer.Option(False, "--headed", help="Show the browser during replay."),
     approve: bool = typer.Option(False, "--approve", help="Authorize this run's mutating steps."),
+    escalate: bool = typer.Option(
+        False,
+        "--escalate",
+        help="On an escalatable hard failure, hand the live session to YOU via a "
+        "terminal operator console instead of failing outright.",
+    ),
 ) -> None:
     """Deterministically replay a saved capability — zero model calls."""
     import os
 
     from tellerly.kernel.guardrails import DeploymentPolicy, PolicyGate
+    from tellerly.kernel.operator import TerminalOperatorConsole
     from tellerly.kernel.store import CapabilityStore
     from tellerly.replay import ReplayEngine
     from tellerly.schema import Tier
@@ -174,6 +181,12 @@ def replay(
     # The INTERSECTION gate: the artifact can only narrow the deployment policy.
     policy = DeploymentPolicy.from_yaml(settings.repo_root / "config" / "policy.yaml")
     gate = PolicyGate(policy, cap.safety)
+    if escalate and not headed and sys.stdin.isatty():
+        # An INTERACTIVE operator who may take over should see the session;
+        # a piped operator session drives through the console text instead
+        # (and a windowless process cannot spawn a headed browser anyway).
+        headed = True
+        console.print("[dim]--escalate opens the browser headed so the operator can watch[/dim]")
     surface = PlaywrightWebSurface(
         headless=not headed, step_timeout_s=cap.limits.step_timeout_s
     )
@@ -182,6 +195,7 @@ def replay(
         gate=gate,
         evidence_root=settings.evidence_dir,
         approve_mutations=approve,
+        escalation=TerminalOperatorConsole(console=console) if escalate else None,
     )
     try:
         result = engine.run(cap, params, target or settings.target_base_url)
@@ -207,6 +221,9 @@ def replay(
         table.add_row("observed", result.failure.observed)
     for name, value in (result.outputs or {}).items():
         table.add_row(f"output {name}", str(value))
+    if result.escalations:
+        decisions = ", ".join(record.decision.value for record in result.escalations)
+        table.add_row("escalations", f"{len(result.escalations)} ({decisions})")
     table.add_row("steps", str(len(result.steps)))
     table.add_row("llm calls", str(result.economics.llm_calls))
     table.add_row("cost", f"${result.economics.cost_usd:.2f}")

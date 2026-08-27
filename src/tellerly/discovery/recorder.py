@@ -35,6 +35,26 @@ _POSTING_VERBS = re.compile(
 
 _MAX_ANCHOR_OFFSET = 3
 
+#: Why each strategy sits where it does on the durability ladder — stamped
+#: onto every surviving rung so the ARTIFACT carries the robustness reasoning,
+#: not just the report. Suffixed with the measurement that earned the rung its
+#: place.
+_STRATEGY_RATIONALE: dict[LocatorStrategy, str] = {
+    LocatorStrategy.ROLE: (
+        "accessible role + name: what a human sees; survives markup churn"
+    ),
+    LocatorStrategy.LABEL: "visible label semantics; changes only when the UI text does",
+    LocatorStrategy.NAME: (
+        "form `name` attribute: the server's own submit contract — cannot churn "
+        "without breaking the backend, invisible to users so never rebranded"
+    ),
+    LocatorStrategy.TEXT: "visible caption; real but copy-editable",
+    LocatorStrategy.ANCHOR: (
+        "position anchored to adjacent label text — for label-less table layouts"
+    ),
+    LocatorStrategy.CSS: "structural selector; last resort (ids are banned outright)",
+}
+
 
 class RecorderError(Exception):
     """No locator uniquely identifies the control — acting would be a guess."""
@@ -122,6 +142,11 @@ def measure_target(surface: Surface, facts: ControlFacts) -> Target:
     survivors.sort(
         key=lambda rung: DURABILITY[LocatorStrategy(rung.strategy)], reverse=True
     )
+    for rung in survivors:
+        rung.note = (
+            _STRATEGY_RATIONALE[LocatorStrategy(rung.strategy)]
+            + " | probed unique against the live page at record time"
+        )
     # verify pins durable identity only: a button's caption is stable, but a
     # value cell's text is THIS run's value — pinning it would break replay.
     verify = VerifyPredicate(

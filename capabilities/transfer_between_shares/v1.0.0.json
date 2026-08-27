@@ -73,26 +73,26 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "accessible role + name: what a human sees; survives markup churn | probed unique against the live page at record time",
             "strategy": "role",
             "role": "textbox",
             "name": "Operator ID:"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "visible label semantics; changes only when the UI text does | probed unique against the live page at record time",
             "strategy": "label",
             "label": "Operator ID:"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "form `name` attribute: the server's own submit contract — cannot churn without breaking the backend, invisible to users so never rebranded | probed unique against the live page at record time",
             "strategy": "name",
             "name": "opid"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "Operator ID:",
             "control": "input",
@@ -100,7 +100,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[name=\"opid\"]"
           }
@@ -126,13 +126,13 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "form `name` attribute: the server's own submit contract — cannot churn without breaking the backend, invisible to users so never rebranded | probed unique against the live page at record time",
             "strategy": "name",
             "name": "opkey"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "Access Key:",
             "control": "input",
@@ -140,7 +140,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[name=\"opkey\"]"
           }
@@ -166,14 +166,14 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "accessible role + name: what a human sees; survives markup churn | probed unique against the live page at record time",
             "strategy": "role",
             "role": "button",
             "name": "Sign In"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[value=\"Sign In\"]"
           }
@@ -192,7 +192,7 @@
     {
       "kind": "checkpoint",
       "id": "s04-checkpoint",
-      "description": "Verify we are on the Member Search page after sign-in",
+      "description": "Signed in and on Member Search page",
       "condition": {
         "url_path_matches": "/search",
         "text_visible": "Member Search",
@@ -211,13 +211,13 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "form `name` attribute: the server's own submit contract — cannot churn without breaking the backend, invisible to users so never rebranded | probed unique against the live page at record time",
             "strategy": "name",
             "name": "mbr_no"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "Member No. or Last Name:",
             "control": "input",
@@ -225,7 +225,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[name=\"mbr_no\"]"
           }
@@ -251,14 +251,14 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "accessible role + name: what a human sees; survives markup churn | probed unique against the live page at record time",
             "strategy": "role",
             "role": "button",
             "name": "Search"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "Member No. or Last Name:",
             "control": "input",
@@ -266,7 +266,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[value=\"Search\"]"
           }
@@ -285,7 +285,7 @@
     {
       "kind": "checkpoint",
       "id": "s07-checkpoint",
-      "description": "Verify member record page for {{input.member_id}}",
+      "description": "Member record page loaded",
       "condition": {
         "url_path_matches": "/member/{{input.member_id}}",
         "text_visible": "Member Record",
@@ -309,13 +309,13 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "form `name` attribute: the server's own submit contract — cannot churn without breaking the backend, invisible to users so never rebranded | probed unique against the live page at record time",
             "strategy": "name",
             "name": "src_share"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "From Share:",
             "control": "select",
@@ -323,7 +323,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "select[name=\"src_share\"]"
           }
@@ -354,13 +354,13 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "form `name` attribute: the server's own submit contract — cannot churn without breaking the backend, invisible to users so never rebranded | probed unique against the live page at record time",
             "strategy": "name",
             "name": "dst_share"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "To Share:",
             "control": "select",
@@ -368,7 +368,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "select[name=\"dst_share\"]"
           }
@@ -399,26 +399,26 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "accessible role + name: what a human sees; survives markup churn | probed unique against the live page at record time",
             "strategy": "role",
             "role": "textbox",
             "name": "Amount (USD):"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "visible label semantics; changes only when the UI text does | probed unique against the live page at record time",
             "strategy": "label",
             "label": "Amount (USD):"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "form `name` attribute: the server's own submit contract — cannot churn without breaking the backend, invisible to users so never rebranded | probed unique against the live page at record time",
             "strategy": "name",
             "name": "amt"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "Amount (USD):",
             "control": "input",
@@ -426,7 +426,7 @@
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[name=\"amt\"]"
           }
@@ -457,14 +457,14 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "accessible role + name: what a human sees; survives markup churn | probed unique against the live page at record time",
             "strategy": "role",
             "role": "button",
             "name": "Continue"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[value=\"Continue\"]"
           }
@@ -495,14 +495,14 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "accessible role + name: what a human sees; survives markup churn | probed unique against the live page at record time",
             "strategy": "role",
             "role": "button",
             "name": "Confirm & Post Transfer"
           },
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "structural selector; last resort (ids are banned outright) | probed unique against the live page at record time",
             "strategy": "css",
             "css": "input[value=\"Confirm & Post Transfer\"]"
           }
@@ -516,18 +516,6 @@
       },
       "value": null,
       "risk": "mutating",
-      "timeout_s": null
-    },
-    {
-      "kind": "checkpoint",
-      "id": "s13-checkpoint",
-      "description": "Verify transfer posted successfully",
-      "condition": {
-        "url_path_matches": "/member/{{input.member_id}}",
-        "text_visible": "TRANSFER POSTED",
-        "text_absent": null,
-        "element_visible": null
-      },
       "timeout_s": null
     },
     {
@@ -545,7 +533,7 @@
         "ladder": [
           {
             "confidence": 1.0,
-            "note": null,
+            "note": "position anchored to adjacent label text — for label-less table layouts | probed unique against the live page at record time",
             "strategy": "anchor",
             "anchor_text": "Confirmation No.",
             "control": "td",
@@ -731,15 +719,15 @@
     "escalation_timeout_s": 300.0
   },
   "provenance": {
-    "discovery_run_id": "discovery-20260827T195553Z-145d8b",
-    "recorded_at": "2026-08-27T19:57:25.370293Z",
+    "discovery_run_id": "discovery-20260827T205204Z-807b14",
+    "recorded_at": "2026-08-27T20:53:25.834677Z",
     "model": "gemini-3.5-flash-lite",
     "discovery_economics": {
-      "llm_calls": 17,
-      "input_tokens": 86848,
-      "output_tokens": 761,
-      "cost_usd": 0.137121,
-      "wall_time_s": 91.93
+      "llm_calls": 15,
+      "input_tokens": 68116,
+      "output_tokens": 651,
+      "cost_usd": 0.108033,
+      "wall_time_s": 81.52
     },
     "notes": "Recorded against http://127.0.0.1:8000"
   }

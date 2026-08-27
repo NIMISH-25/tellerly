@@ -149,6 +149,13 @@ class Surface(ABC):
         is, not where the address bar points. Default suits frameless fakes."""
         return [self.current_url()]
 
+    def dom_snapshot(self) -> str:
+        """The page's markup for intervention evidence — what an operator (or
+        an auditor, later) can inspect when a screenshot is not enough.
+        Non-abstract with an empty default: a surface that cannot serialize
+        its documents still supports handoffs, just with thinner evidence."""
+        return ""
+
     @abstractmethod
     def screenshot(self, path: Path) -> None: ...
 

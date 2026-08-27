@@ -11,9 +11,11 @@ State machine::
 
 Rules the machine enforces:
 
-- Detecting "stuck" is not a heuristic: escalation fires iff the condition's
-  code is ESCALATABLE and the retry budget is spent. That check lives in the
-  replay engine; this machine only accepts the resulting `escalate`.
+- Detecting "stuck" is not a heuristic: escalation fires only for a condition
+  whose code is in the ESCALATABLE set — at a step whose retry budget is
+  spent, or immediately when a declared HARD_FAILURE outcome is detected.
+  That check lives in the replay engine; this machine only accepts the
+  resulting `escalate`.
 - Resume is a decision (CONTINUE / RETRY_STEP / SKIP_STEP), never a bare
   signal — after a human touched the page, the engine cannot infer intent.
   ABORT is its own transition, not a resume flavour.

@@ -443,6 +443,22 @@ class PlaywrightWebSurface(Surface):
                 urls.append(url)
         return urls or [self._page.url]
 
+    def dom_snapshot(self) -> str:
+        """Concatenated HTML of every attached frame, each preceded by a
+        ``<!-- frame: URL -->`` marker — frames are where legacy consoles keep
+        the interesting state, so a top-document-only snapshot would miss the
+        very screen the intervention is about."""
+        parts: list[str] = []
+        for frame in self._page.frames:
+            if frame.is_detached():
+                continue
+            try:
+                html = frame.content()
+            except Exception:
+                continue  # a frame mid-navigation is absent, not fatal
+            parts.append(f"<!-- frame: {frame.url} -->\n{html}")
+        return "\n".join(parts)
+
     def screenshot(self, path: Path) -> None:
         self._page.screenshot(path=str(path), full_page=True)
 

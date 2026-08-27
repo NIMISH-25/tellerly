@@ -1,5 +1,5 @@
 {
-  "run_id": "replay-20260827T195743Z-0f18cd",
+  "run_id": "replay-20260827T205336Z-e681e7",
   "capability_id": "transfer_between_shares",
   "capability_version": "1.0.0",
   "status": "business_outcome",
@@ -18,7 +18,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 490,
+      "duration_ms": 499,
       "note": null
     },
     {
@@ -27,7 +27,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 60,
+      "duration_ms": 80,
       "note": null
     },
     {
@@ -36,7 +36,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 627,
+      "duration_ms": 662,
       "note": null
     },
     {
@@ -45,7 +45,7 @@
       "attempts": 1,
       "resolved_via": null,
       "rung_index": null,
-      "duration_ms": 29,
+      "duration_ms": 22,
       "note": null
     },
     {
@@ -54,7 +54,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 91,
+      "duration_ms": 71,
       "note": null
     },
     {
@@ -63,7 +63,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 651,
+      "duration_ms": 612,
       "note": null
     },
     {
@@ -81,7 +81,7 @@
     "input_tokens": 0,
     "output_tokens": 0,
     "cost_usd": 0.0,
-    "wall_time_s": 2.13
+    "wall_time_s": 2.07
   },
-  "evidence_dir": "evidence/replay-20260827T195743Z-0f18cd"
+  "evidence_dir": "evidence/replay-20260827T205336Z-e681e7"
 }

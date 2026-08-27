@@ -1,10 +1,10 @@
 {
-  "run_id": "replay-20260827T195734Z-8a1a68",
+  "run_id": "replay-20260827T205329Z-150db5",
   "capability_id": "transfer_between_shares",
   "capability_version": "1.0.0",
   "status": "success",
   "outputs": {
-    "confirmation_no": "TL-004219"
+    "confirmation_no": "TL-004221"
   },
   "outcome": null,
   "failure": null,
@@ -16,7 +16,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 535,
+      "duration_ms": 503,
       "note": null
     },
     {
@@ -25,7 +25,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 59,
+      "duration_ms": 60,
       "note": null
     },
     {
@@ -34,7 +34,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 717,
+      "duration_ms": 629,
       "note": null
     },
     {
@@ -43,7 +43,7 @@
       "attempts": 1,
       "resolved_via": null,
       "rung_index": null,
-      "duration_ms": 28,
+      "duration_ms": 26,
       "note": null
     },
     {
@@ -52,7 +52,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 128,
+      "duration_ms": 80,
       "note": null
     },
     {
@@ -61,16 +61,16 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 630,
+      "duration_ms": 627,
       "note": null
     },
     {
       "step_id": "s07-checkpoint",
-      "status": "recovered",
-      "attempts": 2,
+      "status": "ok",
+      "attempts": 1,
       "resolved_via": null,
       "rung_index": null,
-      "duration_ms": 747,
+      "duration_ms": 41,
       "note": null
     },
     {
@@ -79,7 +79,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 112,
+      "duration_ms": 90,
       "note": null
     },
     {
@@ -88,7 +88,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 64,
+      "duration_ms": 57,
       "note": null
     },
     {
@@ -97,7 +97,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 72,
+      "duration_ms": 54,
       "note": null
     },
     {
@@ -106,7 +106,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 143,
+      "duration_ms": 131,
       "note": null
     },
     {
@@ -115,16 +115,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 657,
-      "note": null
-    },
-    {
-      "step_id": "s13-checkpoint",
-      "status": "ok",
-      "attempts": 1,
-      "resolved_via": null,
-      "rung_index": null,
-      "duration_ms": 46,
+      "duration_ms": 648,
       "note": null
     },
     {
@@ -133,7 +124,7 @@
       "attempts": 1,
       "resolved_via": "anchor",
       "rung_index": 0,
-      "duration_ms": 63,
+      "duration_ms": 89,
       "note": null
     }
   ],
@@ -142,7 +133,7 @@
     "input_tokens": 0,
     "output_tokens": 0,
     "cost_usd": 0.0,
-    "wall_time_s": 4.33
+    "wall_time_s": 3.26
   },
-  "evidence_dir": "evidence/replay-20260827T195734Z-8a1a68"
+  "evidence_dir": "evidence/replay-20260827T205329Z-150db5"
 }

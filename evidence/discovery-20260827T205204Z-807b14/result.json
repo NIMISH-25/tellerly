@@ -1,15 +1,15 @@
 {
-  "run_id": "discovery-20260827T195553Z-145d8b",
+  "run_id": "discovery-20260827T205204Z-807b14",
   "goal": "Sign in to the teller console, open member {{input.member_id}}'s record, transfer ${{input.amount}} from share {{input.from_share}} to share {{input.to_share}} using the action panel, confirm the posting, and read back the confirmation number.",
   "status": "goal_met",
   "artifact_path": "capabilities/transfer_between_shares/v1.0.0.json",
-  "steps_taken": 15,
+  "steps_taken": 14,
   "economics": {
-    "llm_calls": 17,
-    "input_tokens": 86848,
-    "output_tokens": 761,
-    "cost_usd": 0.137121,
-    "wall_time_s": 91.93
+    "llm_calls": 15,
+    "input_tokens": 68116,
+    "output_tokens": 651,
+    "cost_usd": 0.108033,
+    "wall_time_s": 81.52
   },
-  "evidence_dir": "evidence/discovery-20260827T195553Z-145d8b"
+  "evidence_dir": "evidence/discovery-20260827T205204Z-807b14"
 }
