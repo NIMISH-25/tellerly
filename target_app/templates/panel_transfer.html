@@ -1,0 +1,59 @@
+{% extends "panel_base.html" %}
+{% block title %}Share-to-Share Transfer{% endblock %}
+{% block content %}
+<font size="3"><b>SHARE-TO-SHARE TRANSFER</b></font>
+<br><br>
+{% if errors %}
+<table cellpadding="4" cellspacing="0" border="0">
+  <tr><td bgcolor="#f4c7c3">
+    <font size="2" color="#8a1f11">
+      {% for e in errors %}{{ e }}<br>{% endfor %}
+    </font>
+  </td></tr>
+</table>
+<br>
+{% endif %}
+<form method="post" action="{{ url_for('panel_transfer', member_id=m.member_id) }}">
+{% set amt_id = rid('fld_amt') %}
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#fbf9f2">
+  <tr>
+    {# No <label for=> on the selects — adjacent-cell text only. #}
+    <td><font size="2">From Share:</font></td>
+    <td>
+      <select name="src_share" id="{{ rid('sel_src') }}">
+        <option value="">-- select --</option>
+        {% for s in m.shares %}
+        <option value="{{ s.share_id }}" {% if form.get('src_share') == s.share_id %}selected{% endif %}>
+          {{ s.share_id }} &mdash; {{ s.type }}{% if s.status != 'OK' %} [{{ s.status }}]{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <td><font size="2">To Share:</font></td>
+    <td>
+      <select name="dst_share" id="{{ rid('sel_dst') }}">
+        <option value="">-- select --</option>
+        {% for s in m.shares %}
+        <option value="{{ s.share_id }}" {% if form.get('dst_share') == s.share_id %}selected{% endif %}>
+          {{ s.share_id }} &mdash; {{ s.type }}{% if s.status != 'OK' %} [{{ s.status }}]{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <td><font size="2"><label for="{{ amt_id }}">Amount (USD):</label></font></td>
+    <td><input type="text" name="amt" id="{{ amt_id }}" size="12" value="{{ form.get('amt', '') }}"></td>
+  </tr>
+  <tr>
+    <td><font size="2">Memo:</font></td>
+    <td><input type="text" name="memo" id="{{ rid('fld_memo') }}" size="28" value="{{ form.get('memo', '') }}"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><input type="submit" value="Continue" id="{{ rid('btn_cont') }}"></td>
+  </tr>
+</table>
+</form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} ({{ code }}){% endblock %}
+{% block content %}
+<br>
+<table cellpadding="10" cellspacing="0" border="1" bordercolor="#8a1f11" align="center" bgcolor="#f4c7c3" width="60%">
+  <tr><td align="center">
+    <font size="3" color="#8a1f11"><b>{{ title }}</b></font>
+    <br><br>
+    <font size="2">{{ message }}</font>
+    <br><br>
+    <font size="2" color="#666666">Reference: {{ code }}</font>
+  </td></tr>
+</table>
+<br>
+<center><a href="{{ url_for('search') }}"><font size="2">Return to Member Search</font></a></center>
+{% endblock %}

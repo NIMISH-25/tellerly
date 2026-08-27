@@ -1,0 +1,115 @@
+# tellerly — Computer-Use Automation System
+
+An LLM discovers how to complete a goal in a legacy back-office UI once; the
+successful run is compiled into a **typed, versioned capability artifact**;
+that artifact **replays deterministically** — no model in the decision loop —
+with human-in-the-loop escalation and safety guardrails throughout.
+
+> The model discovers. The artifact becomes a reusable capability.
+> Deterministic replay is how an AI agent invokes it in production.
+
+
+## Setup
+
+Python 3.11+.
+
+```bash
+python -m venv .venv
+```
+
+Activate it (`.venv\Scripts\activate` on Windows, `source .venv/bin/activate`
+elsewhere), then:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Install editable (`-e`) — the CLI locates the repo (the target app, the
+evidence and capability directories) from the source tree; a plain install
+falls back to the current working directory.
+
+Discovery-time extras (`google-genai`, `playwright`) install with
+`pip install -e ".[discovery]"` — **replay must never need them**. That will
+be enforced structurally when the replay engine lands (import-graph test,
+`llm_calls=0` assertion, stubbed-SDK replay); the mechanism is specified in
+`src/tellerly/replay/__init__.py`.
+
+Copy `.env.example` to `.env`. `GOOGLE_API_KEY` (a Google AI Studio key) is
+only needed for discovery runs; everything currently in the repo runs without
+it. The planner model defaults to `gemini-3.5-flash` — the latest stable
+Flash model, free-tier eligible with tool calling — overridable via
+`TELLERLY_GEMINI_MODEL`.
+
+## The mock target: Tellerly Teller Console
+
+A deliberately legacy, fictional credit-union console — the stand-in for the
+real environment: server-rendered tables, **no test IDs**, element ids that
+**rotate on every render**, mixed labelling, and the transfer form inside an
+**iframe** (frame traversal required).
+
+```bash
+tellerly start-app
+```
+
+Then open http://127.0.0.1:8000 — any operator ID, access key `demo`.
+Flow: sign in → member search (try `101555` or `Whitfield`) → member record →
+share-to-share transfer in the action panel → confirmation → receipt.
+
+Every runtime condition the replay engine must handle is reachable on demand:
+
+| Trigger | What happens | Category |
+|---|---|---|
+| search `99999` | "No records found" | business outcome |
+| open member `55555` | NOT AUTHORIZED (403) | hard failure |
+| transfer **from** share `S02` (member 101555) | refused — administrative hold | business outcome |
+| amount greater than the source balance | refused — insufficient funds | business outcome |
+| amount `-1` or `1000000000` | TELLERLY INTERNAL FAULT (500) | hard failure |
+| any URL with `?slow=1` | 8-second load | recoverable |
+| every 3rd member-record load | maintenance interstitial | recoverable |
+| idle past the session TTL (180 s) | session expired, back to sign-in | recoverable |
+| re-submitting a posted confirmation | TRANSFER ALREADY PROCESSED | business outcome |
+
+Tune the chaos: `tellerly start-app --interstitial-every 0 --session-ttl 3600`
+for a quiet demo, or `python -m target_app --help` for the same flags.
+
+## Demo path
+
+Working today:
+
+```bash
+pytest
+```
+
+```bash
+tellerly start-app
+```
+
+The end-state demo path (commands exist as explicit seams and exit non-zero
+until their phase lands):
+
+```bash
+tellerly discover "transfer $25 from member 101555's savings to checking"
+```
+
+```bash
+tellerly replay <capability-id>
+```
+
+## Layout
+
+```
+src/tellerly/
+  schema/      capability artifact + result contracts (pure data; no browser, no model)
+  surface/     the perceive/act seam; Playwright-over-CDP impl lands here
+  discovery/   LLM planner loop + trace→capability compiler (only package that may import the Gemini SDK)
+  replay/      deterministic execution path (structurally unable to reach a model)
+  kernel/      guardrails, value-based redaction, evidence, session-control token
+  cli.py       tellerly <command>
+target_app/    the mock legacy console (test double, not part of the product)
+tests/         smoke tests for target hostility + one test per failure-matrix row
+evidence/      discovery & replay run evidence (curated, committed)
+```
+
+Each package's `__init__.py` documents the settled design constraints it will
+be built against.
+

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Operator Sign-In &mdash; Tellerly{% endblock %}
+{% block content %}
+<font size="4"><b>Operator Sign-In</b></font>
+<br><br>
+{% if error %}
+<table cellpadding="4" cellspacing="0" border="0">
+  <tr><td bgcolor="#f4c7c3"><font size="2" color="#8a1f11">{{ error }}</font></td></tr>
+</table>
+<br>
+{% endif %}
+<form method="post" action="{{ url_for('login') }}">
+{% set opid_id = rid('fld_opid') %}
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#f7f5ee">
+  <tr>
+    <td><font size="2"><label for="{{ opid_id }}">Operator ID:</label></font></td>
+    <td><input type="text" name="opid" id="{{ opid_id }}" size="18"></td>
+  </tr>
+  <tr>
+    {# Deliberately no <label for=> on this one — adjacent-cell text only. #}
+    <td><font size="2">Access Key:</font></td>
+    <td><input type="password" name="opkey" id="{{ rid('fld_opkey') }}" size="18"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><input type="submit" value="Sign In" id="{{ rid('btn_signin') }}"></td>
+  </tr>
+</table>
+</form>
+<br>
+<font size="2" color="#666666">(Mock system: any operator ID, access key &quot;demo&quot;.)</font>
+{% endblock %}

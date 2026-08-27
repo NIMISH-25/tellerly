@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tellerly"
+version = "0.1.0"
+description = "Computer-use automation for legacy back-office apps: an LLM discovers a flow once, a typed capability artifact replays it deterministically."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "rich>=13.7",
+    "flask>=3.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Discovery-only dependencies. The replay path must run without these installed;
+# an import-graph test (HANDOFF 2.4) enforces that `tellerly.replay` cannot
+# reach a model SDK or a bare HTTP client.
+discovery = [
+    "google-genai>=1.0",
+    "playwright>=1.44",
+]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+tellerly = "tellerly.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

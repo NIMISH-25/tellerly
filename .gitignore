@@ -1,0 +1,20 @@
+# Environments
+.venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Editor / OS
+.idea/
+.vscode/
+Thumbs.db
+
+# Local tooling (session config for Claude Code browser preview)
+.claude/
+HANDOFF.md

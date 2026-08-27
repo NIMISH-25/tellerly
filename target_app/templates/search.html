@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Member Search &mdash; Tellerly{% endblock %}
+{% block content %}
+<font size="4"><b>Member Search</b></font>
+<br><br>
+<form method="post" action="{{ url_for('search') }}">
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#f7f5ee">
+  <tr>
+    {# No <label for=> — the field is identified by adjacent cell text and its name. #}
+    <td><font size="2">Member No. or Last Name:</font></td>
+    <td><input type="text" name="mbr_no" id="{{ rid('fld_srch') }}" size="24" value="{{ query }}"></td>
+    <td><input type="submit" value="Search" id="{{ rid('btn_srch') }}"></td>
+  </tr>
+</table>
+</form>
+<br>
+{% if results is not none %}
+  {% if results %}
+  <table width="100%" cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" id="{{ rid('tbl_results') }}">
+    <tr bgcolor="#d7d2c4">
+      <td><font size="2"><b>Member No.</b></font></td>
+      <td><font size="2"><b>Name</b></font></td>
+      <td><font size="2"><b>Status</b></font></td>
+      <td><font size="2"><b>Member Since</b></font></td>
+    </tr>
+    {% for r in results %}
+    <tr bgcolor="{{ loop.cycle('#ffffff', '#efece3') }}">
+      <td><font size="2"><a href="{{ url_for('member_detail', member_id=r.member_id) }}">{{ r.member_id }}</a></font></td>
+      <td><font size="2">{{ r.last_name }}, {{ r.first_name }}</font></td>
+      <td><font size="2">{{ r.status }}</font></td>
+      <td><font size="2">{{ r.joined }}</font></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <table cellpadding="6" cellspacing="0" border="0">
+    <tr><td bgcolor="#fff3b8"><font size="2">No records found for &quot;{{ query }}&quot;.</font></td></tr>
+  </table>
+  {% endif %}
+{% endif %}
+{% endblock %}

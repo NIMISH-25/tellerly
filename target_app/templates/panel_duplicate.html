@@ -1,0 +1,16 @@
+{% extends "panel_base.html" %}
+{% block title %}Already Processed{% endblock %}
+{% block content %}
+<table cellpadding="6" cellspacing="0" border="0">
+  <tr><td bgcolor="#fff3b8"><font size="3" color="#7a5b00"><b>TRANSFER ALREADY PROCESSED</b></font></td></tr>
+</table>
+<br>
+<font size="2">
+This transfer reference was already posted and will not be posted again.
+Original confirmation number: <b>{{ receipt.confirmation_no }}</b>.
+</font>
+<br><br>
+<font size="2" color="#666666">Reason code: DUP-118</font>
+<br><br>
+<a href="{{ url_for('panel', member_id=m.member_id) }}"><font size="2">&laquo; Back to Transfer</font></a>
+{% endblock %}

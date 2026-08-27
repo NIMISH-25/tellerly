@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Member {{ m.member_id }} &mdash; Tellerly{% endblock %}
+{% block content %}
+<font size="4"><b>Member Record</b></font>
+<br><br>
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#f7f5ee" id="{{ rid('tbl_member') }}">
+  <tr>
+    <td><font size="2"><b>Member No.</b></font></td>
+    <td><font size="2">{{ m.member_id }}</font></td>
+    <td><font size="2"><b>Status</b></font></td>
+    <td><font size="2">{{ m.status }}</font></td>
+  </tr>
+  <tr>
+    <td><font size="2"><b>Name</b></font></td>
+    <td><font size="2">{{ m.last_name }}, {{ m.first_name }}</font></td>
+    <td><font size="2"><b>Member Since</b></font></td>
+    <td><font size="2">{{ m.joined }}</font></td>
+  </tr>
+</table>
+<br>
+<font size="3"><b>Shares</b></font>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" id="{{ rid('tbl_shares') }}">
+  <tr bgcolor="#d7d2c4">
+    <td><font size="2"><b>Share</b></font></td>
+    <td><font size="2"><b>Description</b></font></td>
+    <td><font size="2"><b>Status</b></font></td>
+    <td align="right"><font size="2"><b>Available Balance</b></font></td>
+  </tr>
+  {% for s in m.shares %}
+  <tr bgcolor="{{ loop.cycle('#ffffff', '#efece3') }}">
+    <td><font size="2">{{ s.share_id }}</font></td>
+    <td><font size="2">{{ s.type }}</font></td>
+    <td><font size="2">{{ s.status }}</font></td>
+    <td align="right"><font size="2">${{ '{:,.2f}'.format(s.balance) }}</font></td>
+  </tr>
+  {% endfor %}
+</table>
+<br>
+<font size="3"><b>Action Panel</b></font><br>
+{# The action panel lives in an iframe on purpose — legacy consoles frame
+   their transaction tools, and automation must cope with frame traversal. #}
+<iframe name="actionpanel" src="{{ url_for('panel', member_id=m.member_id) }}"
+        width="100%" height="380" frameborder="1" id="{{ rid('frm_panel') }}"></iframe>
+<br>
+<a href="{{ url_for('search') }}"><font size="2">&laquo; Back to Member Search</font></a>
+{% endblock %}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{% block title %}Tellerly Teller Console{% endblock %}</title>
+</head>
+<body bgcolor="#e8e4d8" style="font-family: 'Times New Roman', serif; margin: 0;">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" id="{{ rid('hdr') }}">
+  <tr bgcolor="#1f3a5f">
+    <td>
+      <font color="#ffffff" size="4"><b>TELLERLY&reg; TELLER CONSOLE</b></font><br>
+      <font color="#c9d4e4" size="2">Ridgeline Credit Union &mdash; TRAINING / MOCK SYSTEM &mdash; build 4.2.117</font>
+    </td>
+    <td align="right" valign="top">
+      <font color="#c9d4e4" size="2">
+        {% if session.get('operator') %}
+          Operator: {{ session['operator'] }} &nbsp;|&nbsp;
+          <a href="{{ url_for('logout') }}"><font color="#ffffff">Sign Out</font></a>
+        {% else %}
+          Not signed in
+        {% endif %}
+      </font>
+    </td>
+  </tr>
+  <tr bgcolor="#8a9bb3">
+    <td colspan="2">
+      <font size="2">
+        <a href="{{ url_for('search') }}">Member Search</a>
+      </font>
+    </td>
+  </tr>
+</table>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <table width="100%" cellpadding="4" cellspacing="0" border="0">
+    <tr><td bgcolor="#fff3b8">
+      <font size="2" color="#7a5b00">
+        {% for message in messages %}{{ message }}<br>{% endfor %}
+      </font>
+    </td></tr>
+  </table>
+  {% endif %}
+{% endwith %}
+<table width="96%" align="center" cellpadding="10" cellspacing="0" border="0">
+  <tr><td id="{{ rid('main') }}">
+{% block content %}{% endblock %}
+  </td></tr>
+</table>
+<table width="100%" cellpadding="4" cellspacing="0" border="0">
+  <tr><td align="center">
+    <font size="1" color="#666666">RIDGELINE CU INTERNAL SYSTEM &middot; FICTIONAL DATA ONLY &middot; TELLERLY IS A FICTIONAL PRODUCT</font>
+  </td></tr>
+</table>
+</body>
+</html>

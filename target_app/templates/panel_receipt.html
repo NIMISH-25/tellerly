@@ -1,0 +1,19 @@
+{% extends "panel_base.html" %}
+{% block title %}Transfer Posted{% endblock %}
+{% block content %}
+<table cellpadding="6" cellspacing="0" border="0">
+  <tr><td bgcolor="#d8ecd0"><font size="3" color="#1d4d1d"><b>TRANSFER POSTED</b></font></td></tr>
+</table>
+<br>
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#fbf9f2">
+  <tr><td><font size="2"><b>Confirmation No.</b></font></td><td><font size="2">{{ receipt.confirmation_no }}</font></td></tr>
+  <tr><td><font size="2"><b>Member No.</b></font></td><td><font size="2">{{ receipt.member_id }}</font></td></tr>
+  <tr><td><font size="2"><b>From / To</b></font></td><td><font size="2">{{ receipt.src_id }} &rarr; {{ receipt.dst_id }}</font></td></tr>
+  <tr><td><font size="2"><b>Amount</b></font></td><td><font size="2">${{ '{:,.2f}'.format(receipt.amount) }}</font></td></tr>
+  <tr><td><font size="2"><b>New Balance (From)</b></font></td><td><font size="2">${{ '{:,.2f}'.format(receipt.src_balance) }}</font></td></tr>
+  <tr><td><font size="2"><b>New Balance (To)</b></font></td><td><font size="2">${{ '{:,.2f}'.format(receipt.dst_balance) }}</font></td></tr>
+  {% if memo %}<tr><td><font size="2"><b>Memo</b></font></td><td><font size="2">{{ memo }}</font></td></tr>{% endif %}
+</table>
+<br>
+<a href="{{ url_for('panel', member_id=m.member_id) }}"><font size="2">New Transfer</font></a>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "panel_base.html" %}
+{% block title %}Confirm Transfer{% endblock %}
+{% block content %}
+<font size="3"><b>CONFIRM TRANSFER</b></font>
+<br><br>
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#fbf9f2">
+  <tr><td><font size="2"><b>Member No.</b></font></td><td><font size="2">{{ m.member_id }}</font></td></tr>
+  <tr><td><font size="2"><b>From Share</b></font></td><td><font size="2">{{ src.share_id }} &mdash; {{ src.type }}</font></td></tr>
+  <tr><td><font size="2"><b>To Share</b></font></td><td><font size="2">{{ dst.share_id }} &mdash; {{ dst.type }}</font></td></tr>
+  <tr><td><font size="2"><b>Amount</b></font></td><td><font size="2">${{ '{:,.2f}'.format(p.amount) }}</font></td></tr>
+  {% if p.memo %}<tr><td><font size="2"><b>Memo</b></font></td><td><font size="2">{{ p.memo }}</font></td></tr>{% endif %}
+</table>
+<br>
+<font size="2" color="#8a1f11"><b>This posting cannot be reversed from the console. Verify before confirming.</b></font>
+<br><br>
+<form method="post" action="{{ url_for('panel_confirm', member_id=m.member_id) }}">
+  <input type="hidden" name="txn_ref" value="{{ p.ref }}">
+  <input type="submit" value="Confirm &amp; Post Transfer" id="{{ rid('btn_post') }}">
+  &nbsp;&nbsp;<a href="{{ url_for('panel', member_id=m.member_id) }}"><font size="2">Cancel</font></a>
+</form>
+{% endblock %}
