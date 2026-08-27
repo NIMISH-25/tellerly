@@ -71,7 +71,7 @@ def discover(
         Panel(
             f"Goal: {goal}\nTarget: {target or settings.target_base_url}\n\n"
             "The planner loop is Phase 2.2 and is designed against the Phase 1 "
-            "schemas, which come first. See HANDOFF.md.",
+            "schemas, which come first.",
             title="discover — not built yet",
         )
     )
@@ -86,8 +86,8 @@ def replay(
     console.print(
         Panel(
             f"Capability: {capability}\n\n"
-            "The replay engine is Phase 2.4; the artifact schema it executes is "
-            "designed in Phase 1.1. See HANDOFF.md.",
+            "The replay engine is not built yet; the artifact schema it "
+            "executes lands first.",
             title="replay — not built yet",
         )
     )

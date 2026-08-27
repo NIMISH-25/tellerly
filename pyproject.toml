@@ -17,8 +17,8 @@ dependencies = [
 
 [project.optional-dependencies]
 # Discovery-only dependencies. The replay path must run without these installed;
-# an import-graph test (HANDOFF 2.4) enforces that `tellerly.replay` cannot
-# reach a model SDK or a bare HTTP client.
+# an import-graph test enforces that `tellerly.replay` cannot reach a model SDK
+# or a bare HTTP client.
 discovery = [
     "google-genai>=1.0",
     "playwright>=1.44",

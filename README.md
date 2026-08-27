@@ -109,7 +109,3 @@ target_app/    the mock legacy console (test double, not part of the product)
 tests/         smoke tests for target hostility + one test per failure-matrix row
 evidence/      discovery & replay run evidence (curated, committed)
 ```
-
-Each package's `__init__.py` documents the settled design constraints it will
-be built against.
-
