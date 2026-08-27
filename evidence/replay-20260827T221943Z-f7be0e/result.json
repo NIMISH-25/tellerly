@@ -1,0 +1,139 @@
+{
+  "run_id": "replay-20260827T221943Z-f7be0e",
+  "capability_id": "transfer_between_shares",
+  "capability_version": "1.0.0",
+  "status": "success",
+  "outputs": {
+    "confirmation_no": "TL-004224"
+  },
+  "outcome": null,
+  "failure": null,
+  "escalations": [],
+  "steps": [
+    {
+      "step_id": "s01-fill-the-operator-id-field",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "role",
+      "rung_index": 0,
+      "duration_ms": 532,
+      "note": null
+    },
+    {
+      "step_id": "s02-fill-the-access-key-field",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "name",
+      "rung_index": 0,
+      "duration_ms": 48,
+      "note": null
+    },
+    {
+      "step_id": "s03-click-the-sign-in-button",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "role",
+      "rung_index": 0,
+      "duration_ms": 615,
+      "note": null
+    },
+    {
+      "step_id": "s04-checkpoint",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": null,
+      "rung_index": null,
+      "duration_ms": 25,
+      "note": null
+    },
+    {
+      "step_id": "s05-fill-the-member-no-or",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "name",
+      "rung_index": 0,
+      "duration_ms": 86,
+      "note": null
+    },
+    {
+      "step_id": "s06-click-the-search-button",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "role",
+      "rung_index": 0,
+      "duration_ms": 627,
+      "note": null
+    },
+    {
+      "step_id": "s07-checkpoint",
+      "status": "recovered",
+      "attempts": 2,
+      "resolved_via": null,
+      "rung_index": null,
+      "duration_ms": 724,
+      "note": null
+    },
+    {
+      "step_id": "s08-select-the-from-share-dropdown",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "name",
+      "rung_index": 0,
+      "duration_ms": 101,
+      "note": null
+    },
+    {
+      "step_id": "s09-select-the-to-share-dropdown",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "name",
+      "rung_index": 0,
+      "duration_ms": 63,
+      "note": null
+    },
+    {
+      "step_id": "s10-fill-the-amount-usd-field",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "role",
+      "rung_index": 0,
+      "duration_ms": 67,
+      "note": null
+    },
+    {
+      "step_id": "s11-click-the-continue-button",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "role",
+      "rung_index": 0,
+      "duration_ms": 142,
+      "note": null
+    },
+    {
+      "step_id": "s12-click-the-confirm-post-transfer",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "role",
+      "rung_index": 0,
+      "duration_ms": 644,
+      "note": null
+    },
+    {
+      "step_id": "s14-read-confirmation-no",
+      "status": "ok",
+      "attempts": 1,
+      "resolved_via": "anchor",
+      "rung_index": 0,
+      "duration_ms": 60,
+      "note": null
+    }
+  ],
+  "economics": {
+    "llm_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cost_usd": 0.0,
+    "wall_time_s": 4.02
+  },
+  "evidence_dir": "evidence/replay-20260827T221943Z-f7be0e"
+}

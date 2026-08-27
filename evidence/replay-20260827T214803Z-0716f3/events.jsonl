@@ -1,0 +1,18 @@
+{"ts": "2026-08-27T21:48:03.974+00:00", "kind": "run_started", "capability": "transfer_between_shares", "version": "1.0.0", "base_url": "http://127.0.0.1:8010", "params": ["access_key", "amount", "from_share", "member_id", "operator_id", "to_share"]}
+{"ts": "2026-08-27T21:48:03.975+00:00", "kind": "entry", "url": "http://127.0.0.1:8010/login"}
+{"ts": "2026-08-27T21:48:04.557+00:00", "kind": "step_finished", "step_id": "s01-fill-the-operator-id-field", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 2, "duration_ms": 538, "note": null}
+{"ts": "2026-08-27T21:48:04.601+00:00", "kind": "step_finished", "step_id": "s02-fill-the-access-key-field", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 0, "duration_ms": 42, "note": null}
+{"ts": "2026-08-27T21:48:05.234+00:00", "kind": "step_finished", "step_id": "s03-click-the-sign-in-button", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 631, "note": null}
+{"ts": "2026-08-27T21:48:05.257+00:00", "kind": "step_finished", "step_id": "s04-checkpoint", "status": "ok", "attempts": 1, "resolved_via": null, "rung_index": null, "duration_ms": 22, "note": null}
+{"ts": "2026-08-27T21:48:05.331+00:00", "kind": "step_finished", "step_id": "s05-fill-the-member-no-or", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 0, "duration_ms": 73, "note": null}
+{"ts": "2026-08-27T21:48:05.952+00:00", "kind": "step_finished", "step_id": "s06-click-the-search-button", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 619, "note": null}
+{"ts": "2026-08-27T21:48:05.993+00:00", "kind": "step_finished", "step_id": "s07-checkpoint", "status": "ok", "attempts": 1, "resolved_via": null, "rung_index": null, "duration_ms": 40, "note": null}
+{"ts": "2026-08-27T21:48:06.144+00:00", "kind": "step_finished", "step_id": "s08-select-the-from-share-dropdown", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 0, "duration_ms": 150, "note": null}
+{"ts": "2026-08-27T21:48:06.198+00:00", "kind": "step_finished", "step_id": "s09-select-the-to-share-dropdown", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 0, "duration_ms": 53, "note": null}
+{"ts": "2026-08-27T21:48:06.254+00:00", "kind": "step_finished", "step_id": "s10-fill-the-amount-usd-field", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 55, "note": null}
+{"ts": "2026-08-27T21:48:06.372+00:00", "kind": "step_finished", "step_id": "s11-click-the-continue-button", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 117, "note": null}
+{"ts": "2026-08-27T21:48:06.690+00:00", "kind": "step_finished", "step_id": "bp-checkpoint-verify-transfer", "status": "ok", "attempts": 1, "resolved_via": null, "rung_index": null, "duration_ms": 316, "note": null}
+{"ts": "2026-08-27T21:48:07.334+00:00", "kind": "step_finished", "step_id": "bp-click-acknowledge-continue", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 643, "note": null}
+{"ts": "2026-08-27T21:48:07.437+00:00", "kind": "step_finished", "step_id": "s12-click-the-confirm-post-transfer", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 102, "note": null}
+{"ts": "2026-08-27T21:48:07.503+00:00", "kind": "step_finished", "step_id": "s14-read-confirmation-no", "status": "ok", "attempts": 1, "resolved_via": "anchor", "rung_index": 0, "duration_ms": 65, "note": null}
+{"ts": "2026-08-27T21:48:07.597+00:00", "kind": "run_finished", "status": "success"}

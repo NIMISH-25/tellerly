@@ -1,5 +1,6 @@
 """tellerly — command-line entry point."""
 import sys
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -30,6 +31,14 @@ def version() -> None:
     console.print(f"tellerly {__version__}")
 
 
+class TenantName(str, Enum):
+    """Tenant skins the mock target ships — same vendor product, different
+    branding (and, for bluepeak, one extra verify screen)."""
+
+    ridgeline = "ridgeline"
+    bluepeak = "bluepeak"
+
+
 @app.command(name="start-app")
 def start_app(
     host: str = typer.Option("127.0.0.1", help="Bind address."),
@@ -38,6 +47,9 @@ def start_app(
         3, help="Show the maintenance interstitial every Nth member-record load (0 disables)."
     ),
     session_ttl: int = typer.Option(180, help="Idle seconds before the operator session expires."),
+    tenant: TenantName = typer.Option(
+        TenantName.ridgeline, "--tenant", help="Tenant skin of the console."
+    ),
 ) -> None:
     """Run the mock target: the Tellerly Teller Console (fictional legacy app)."""
     settings = load_settings()
@@ -46,7 +58,7 @@ def start_app(
 
     console.print(
         Panel(
-            f"Tellerly Teller Console (mock target)\n"
+            f"Tellerly Teller Console (mock target, tenant: {tenant.value})\n"
             f"http://{host}:{port}  —  sign in with any operator ID, access key 'demo'\n"
             f"interstitial: every {interstitial_every or 'never'} member-record load(s), "
             f"session TTL: {session_ttl}s",
@@ -54,7 +66,11 @@ def start_app(
         )
     )
     create_app(
-        {"INTERSTITIAL_EVERY": interstitial_every, "SESSION_TTL_S": session_ttl}
+        {
+            "INTERSTITIAL_EVERY": interstitial_every,
+            "SESSION_TTL_S": session_ttl,
+            "TENANT": tenant.value,
+        }
     ).run(host=host, port=port, use_reloader=False)
 
 
@@ -137,6 +153,12 @@ def replay(
         "is read from the environment — how secrets stay off the command line.",
     ),
     version: Optional[str] = typer.Option(None, "--version", help="Capability version (default: latest)."),
+    tenant: Optional[str] = typer.Option(
+        None,
+        "--tenant",
+        help="Apply this tenant's overlay (capabilities/<id>/overlays/<tenant>.json) "
+        "and replay the resolved capability.",
+    ),
     target: Optional[str] = typer.Option(None, "--target", help="Target base URL (default: TELLERLY_TARGET_URL)."),
     headed: bool = typer.Option(False, "--headed", help="Show the browser during replay."),
     approve: bool = typer.Option(False, "--approve", help="Authorize this run's mutating steps."),
@@ -154,15 +176,30 @@ def replay(
     from tellerly.kernel.operator import TerminalOperatorConsole
     from tellerly.kernel.store import CapabilityStore
     from tellerly.replay import ReplayEngine
-    from tellerly.schema import Tier
+    from tellerly.schema import OverlayError, Tier, apply_overlay
     from tellerly.surface.web import PlaywrightWebSurface
 
     settings = load_settings()
+    store = CapabilityStore(settings.capabilities_dir)
     try:
-        cap = CapabilityStore(settings.capabilities_dir).load(capability_id, version)
+        cap = store.load(capability_id, version)
     except FileNotFoundError as exc:
         error_console.print(str(exc))
         raise typer.Exit(1)
+
+    if tenant is not None:
+        # Everything downstream — the policy intersection included — sees only
+        # the RESOLVED capability; the base is never partially applied.
+        try:
+            overlay = store.load_overlay(capability_id, tenant)
+        except FileNotFoundError as exc:
+            error_console.print(str(exc))
+            raise typer.Exit(1)
+        try:
+            cap = apply_overlay(cap, overlay)
+        except OverlayError as exc:
+            error_console.print(f"overlay '{tenant}' does not apply: {exc}")
+            raise typer.Exit(2)
 
     params: dict[str, str] = {}
     for item in inputs:
@@ -209,6 +246,7 @@ def replay(
     table.add_column("field")
     table.add_column("value")
     table.add_row("capability", f"{result.capability_id} v{result.capability_version}")
+    table.add_row("tenant", tenant or "— (base)")
     table.add_row("run", result.run_id)
     if result.outcome is not None:
         table.add_row(
@@ -232,6 +270,35 @@ def replay(
     console.print(table)
 
     raise typer.Exit({Tier.SUCCESS: 0, Tier.BUSINESS_OUTCOME: 3}.get(result.status, 6))
+
+
+@app.command(name="serve-api")
+def serve_api(
+    host: str = typer.Option("127.0.0.1", help="Bind address."),
+    port: int = typer.Option(8800, help="Port."),
+) -> None:
+    """Serve the agent-facing capability API: discover and invoke by name."""
+    from tellerly.api import create_api
+
+    base = f"http://{host}:{port}"
+    example = (
+        f"curl -s -X POST {base}/api/capabilities/transfer_between_shares/invoke \\\n"
+        '  -H "Content-Type: application/json" \\\n'
+        '  -d \'{"inputs": {"operator_id": "op-1", "access_key": "demo", '
+        '"member_id": "101556", "from_share": "S00", "to_share": "S01", '
+        '"amount": "10.00"}, "approve_mutations": true}\''
+    )
+    console.print(
+        Panel(
+            f"GET  {base}/api/health\n"
+            f"GET  {base}/api/capabilities\n"
+            f"GET  {base}/api/capabilities/<id>\n"
+            f"POST {base}/api/capabilities/<id>/invoke\n\n"
+            f"{example}",
+            title="capability API",
+        )
+    )
+    create_api().run(host=host, port=port, use_reloader=False)
 
 
 @caps_app.command(name="list")
@@ -276,8 +343,9 @@ def caps_show(
     from tellerly.schema import ActStep, CheckpointStep, ReadStep
 
     settings = load_settings()
+    store = CapabilityStore(settings.capabilities_dir)
     try:
-        cap = CapabilityStore(settings.capabilities_dir).load(capability_id, version)
+        cap = store.load(capability_id, version)
     except FileNotFoundError as exc:
         error_console.print(str(exc))
         raise typer.Exit(1)
@@ -320,6 +388,9 @@ def caps_show(
         steps.add_row(str(index), step.id, what)
     console.print(steps)
     console.print(f"needs surface features: {', '.join(sorted(f.value for f in cap.required_features()))}")
+    overlays = store.list_overlays(capability_id)
+    if overlays:
+        console.print(f"tenant overlays: {', '.join(overlays)} (replay with --tenant)")
 
 
 def main() -> None:

@@ -163,6 +163,7 @@ class ReplayEngine:
         self._telemetry: list[StepOutcome] = []
         self._outputs: dict[str, str | int | float | bool] = {}
         self._current_step_id: str | None = None
+        self._page_opened = False
         self._token = ControlToken()
         self._escalations: list[InterventionRecord] = []
         self._escalated_steps: dict[str | None, bool] = {}
@@ -323,6 +324,7 @@ class ReplayEngine:
         self.gate.check_url(entry_url)
         self._log.event("entry", url=entry_url)
         self.surface.open(entry_url)
+        self._page_opened = True
 
         # e. The recorded steps, in order.
         for step in capability.steps:
@@ -1059,6 +1061,11 @@ class ReplayEngine:
     def _screenshot(self, label: str) -> str | None:
         if self._log is None:
             return None  # the run never got far enough to open evidence
+        if not self._page_opened:
+            # Refused before any navigation (e.g. the entry host failed the
+            # policy intersection): the browser shows about:blank, and a blank
+            # PNG is noise, not evidence — the events and result carry the story.
+            return None
         path = self._log.screenshot_path(label)
         try:
             self.surface.screenshot(path)

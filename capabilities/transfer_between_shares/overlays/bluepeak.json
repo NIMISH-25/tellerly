@@ -1,0 +1,132 @@
+{
+  "schema_version": "1",
+  "tenant_id": "bluepeak",
+  "capability_id": "transfer_between_shares",
+  "base_version": "1.0.0",
+  "description": "Bluepeak Credit Union skin of the vendor teller console: the sign-in button reads 'Log On', the posting button reads 'Authorize Posting', and a mandatory VERIFY TRANSFER interstitial sits between the transfer form and the confirm screen. Form name attributes, routes, and flow semantics are the base product's.",
+  "hosts": [
+    "127.0.0.1:8010",
+    "localhost:8010"
+  ],
+  "operations": [
+    {
+      "op": "retarget_step",
+      "step_id": "s03-click-the-sign-in-button",
+      "target": {
+        "description": "the Log On button",
+        "frame": [],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": "authored for tenant bluepeak — accessible role + tenant caption",
+            "strategy": "role",
+            "role": "button",
+            "name": "Log On"
+          },
+          {
+            "confidence": 1.0,
+            "note": "authored for tenant bluepeak — structural fallback on the tenant caption",
+            "strategy": "css",
+            "css": "input[value='Log On']"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": null,
+          "text_contains": "Log On"
+        },
+        "on_ambiguous": "fail"
+      }
+    },
+    {
+      "op": "retarget_step",
+      "step_id": "s12-click-the-confirm-post-transfer",
+      "target": {
+        "description": "the Authorize Posting button",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel/confirm"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": "authored for tenant bluepeak — accessible role + tenant caption",
+            "strategy": "role",
+            "role": "button",
+            "name": "Authorize Posting"
+          },
+          {
+            "confidence": 1.0,
+            "note": "authored for tenant bluepeak — structural fallback on the tenant caption",
+            "strategy": "css",
+            "css": "input[value='Authorize Posting']"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": null,
+          "text_contains": "Authorize Posting"
+        },
+        "on_ambiguous": "fail"
+      }
+    },
+    {
+      "op": "insert_steps",
+      "after_step": "s11-click-the-continue-button",
+      "steps": [
+        {
+          "kind": "checkpoint",
+          "id": "bp-checkpoint-verify-transfer",
+          "description": "Bluepeak's mandatory verify interstitial reached",
+          "condition": {
+            "url_path_matches": null,
+            "text_visible": "VERIFY TRANSFER",
+            "text_absent": null,
+            "element_visible": null
+          },
+          "timeout_s": null
+        },
+        {
+          "kind": "act",
+          "id": "bp-click-acknowledge-continue",
+          "action": "click",
+          "target": {
+            "description": "the Acknowledge & Continue button",
+            "frame": [
+              {
+                "name": "actionpanel",
+                "url_path": "/member/{{input.member_id}}/panel/verify"
+              }
+            ],
+            "ladder": [
+              {
+                "confidence": 1.0,
+                "note": "authored for tenant bluepeak — accessible role + tenant caption",
+                "strategy": "role",
+                "role": "button",
+                "name": "Acknowledge & Continue"
+              },
+              {
+                "confidence": 1.0,
+                "note": "authored for tenant bluepeak — structural fallback on the tenant caption",
+                "strategy": "css",
+                "css": "input[value='Acknowledge & Continue']"
+              }
+            ],
+            "verify": {
+              "control": "input",
+              "name_attr": null,
+              "text_contains": "Acknowledge & Continue"
+            },
+            "on_ambiguous": "fail"
+          },
+          "value": null,
+          "risk": "safe",
+          "timeout_s": null
+        }
+      ]
+    }
+  ]
+}

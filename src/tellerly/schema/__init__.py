@@ -40,6 +40,16 @@ from tellerly.schema.locators import (
     TextRung,
     VerifyPredicate,
 )
+from tellerly.schema.overlay import (
+    AddOutcome,
+    InsertSteps,
+    OverlayError,
+    OverlayOp,
+    RetargetStep,
+    SetEntry,
+    TenantOverlay,
+    apply_overlay,
+)
 from tellerly.schema.results import (
     DiscoveryResult,
     DiscoveryStatus,

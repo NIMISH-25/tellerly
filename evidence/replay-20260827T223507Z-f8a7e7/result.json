@@ -1,0 +1,25 @@
+{
+  "run_id": "replay-20260827T223507Z-f8a7e7",
+  "capability_id": "transfer_between_shares",
+  "capability_version": "1.0.0",
+  "status": "hard_failure",
+  "outputs": null,
+  "outcome": null,
+  "failure": {
+    "step_id": null,
+    "code": "policy_blocked",
+    "expected": "every destination and action inside the policy envelope",
+    "observed": "host '127.0.0.1:8010' is not in the policy allowlist ['127.0.0.1:8000']",
+    "evidence": []
+  },
+  "escalations": [],
+  "steps": [],
+  "economics": {
+    "llm_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cost_usd": 0.0,
+    "wall_time_s": 0.0
+  },
+  "evidence_dir": "evidence/replay-20260827T223507Z-f8a7e7"
+}

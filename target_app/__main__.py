@@ -17,9 +17,19 @@ def main() -> None:
     parser.add_argument(
         "--session-ttl", type=int, default=180, help="Idle seconds before session expiry."
     )
+    parser.add_argument(
+        "--tenant",
+        choices=["ridgeline", "bluepeak"],
+        default="ridgeline",
+        help="Tenant skin to run (bluepeak adds the verify screen).",
+    )
     args = parser.parse_args()
     app = create_app(
-        {"INTERSTITIAL_EVERY": args.interstitial_every, "SESSION_TTL_S": args.session_ttl}
+        {
+            "INTERSTITIAL_EVERY": args.interstitial_every,
+            "SESSION_TTL_S": args.session_ttl,
+            "TENANT": args.tenant,
+        }
     )
     app.run(host=args.host, port=args.port, use_reloader=False)
 

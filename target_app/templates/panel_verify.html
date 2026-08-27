@@ -1,0 +1,18 @@
+{% extends "panel_base.html" %}
+{% block title %}Verify Transfer{% endblock %}
+{% block content %}
+<font size="3"><b>VERIFY TRANSFER</b></font>
+<br><br>
+<table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#fbf9f2">
+  <tr><td><font size="2"><b>Member No.</b></font></td><td><font size="2">{{ m.member_id }}</font></td></tr>
+  <tr><td><font size="2"><b>From / To</b></font></td><td><font size="2">{{ p.src_share }} &rarr; {{ p.dst_share }}</font></td></tr>
+  <tr><td><font size="2"><b>Amount</b></font></td><td><font size="2">${{ '{:,.2f}'.format(p.amount) }}</font></td></tr>
+</table>
+<br>
+<font size="2">Bluepeak policy requires acknowledgement of the transfer details before posting can be authorized.</font>
+<br><br>
+<form method="post" action="{{ url_for('panel_verify', member_id=m.member_id) }}">
+  <input type="hidden" name="txn_ref" value="{{ p.ref }}">
+  <input type="submit" value="Acknowledge &amp; Continue" id="{{ rid('btn_ack') }}">
+</form>
+{% endblock %}

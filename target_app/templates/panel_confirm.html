@@ -15,7 +15,7 @@
 <br><br>
 <form method="post" action="{{ url_for('panel_confirm', member_id=m.member_id) }}">
   <input type="hidden" name="txn_ref" value="{{ p.ref }}">
-  <input type="submit" value="Confirm &amp; Post Transfer" id="{{ rid('btn_post') }}">
+  <input type="submit" value="{{ L('confirm_button') }}" id="{{ rid('btn_post') }}">
   &nbsp;&nbsp;<a href="{{ url_for('panel', member_id=m.member_id) }}"><font size="2">Cancel</font></a>
 </form>
 {% endblock %}

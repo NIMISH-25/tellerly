@@ -4,5 +4,7 @@
 allowed_hosts:
   - "127.0.0.1:8000"
   - "localhost:8000"
+  - "127.0.0.1:8010"  # tenant bluepeak instance
+  - "localhost:8010"  # tenant bluepeak instance
 allowed_actions: [navigate, click, fill, select, press]
 require_confirmation: true

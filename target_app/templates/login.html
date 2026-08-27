@@ -13,7 +13,7 @@
 {% set opid_id = rid('fld_opid') %}
 <table cellpadding="4" cellspacing="0" border="1" bordercolor="#999999" bgcolor="#f7f5ee">
   <tr>
-    <td><font size="2"><label for="{{ opid_id }}">Operator ID:</label></font></td>
+    <td><font size="2"><label for="{{ opid_id }}">{{ L('operator_label') }}</label></font></td>
     <td><input type="text" name="opid" id="{{ opid_id }}" size="18"></td>
   </tr>
   <tr>
@@ -22,7 +22,7 @@
     <td><input type="password" name="opkey" id="{{ rid('fld_opkey') }}" size="18"></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><input type="submit" value="Sign In" id="{{ rid('btn_signin') }}"></td>
+    <td colspan="2" align="center"><input type="submit" value="{{ L('signin_button') }}" id="{{ rid('btn_signin') }}"></td>
   </tr>
 </table>
 </form>

@@ -310,6 +310,24 @@ def test_interstitial_is_auto_recovered_without_a_human(surface, tmp_path):
     assert step_recovered or "recover" in events.lower()
 
 
+def test_entry_host_refusal_leaves_no_blank_screenshots(tmp_path):
+    """A run refused at the policy intersection never navigated anywhere —
+    a screenshot of about:blank would be noise, not evidence."""
+    spy = SpySurface()
+    engine = ReplayEngine(
+        surface=spy,
+        gate=gate_for(59999),  # a port the artifact's entry will never match
+        evidence_root=tmp_path / "evidence",
+        approve_mutations=True,
+    )
+    result = engine.run(load_capability(), params(), "http://127.0.0.1:58888")
+    assert result.status is Tier.HARD_FAILURE
+    assert result.failure.code is Code.POLICY_BLOCKED
+    assert result.failure.evidence == []  # no blank PNGs
+    assert result.evidence_dir is not None
+    assert list(Path(result.evidence_dir).glob("*.png")) == []
+
+
 def test_invalid_params_fail_before_the_browser_opens(tmp_path):
     spy = SpySurface()
     bad = params(member_id="abc", amount=None)  # pattern violation + missing required

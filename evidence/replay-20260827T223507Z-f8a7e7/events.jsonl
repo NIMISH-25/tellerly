@@ -1,0 +1,2 @@
+{"ts": "2026-08-27T22:35:07.686+00:00", "kind": "run_started", "capability": "transfer_between_shares", "version": "1.0.0", "base_url": "http://127.0.0.1:8010", "params": ["access_key", "amount", "from_share", "member_id", "operator_id", "to_share"]}
+{"ts": "2026-08-27T22:35:07.690+00:00", "kind": "run_finished", "status": "hard_failure"}
