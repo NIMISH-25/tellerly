@@ -1,7 +1,7 @@
 {
-  "run_id": "replay-20260827T205500Z-bbda2c",
+  "run_id": "replay-20260827T231938Z-ec63cd",
   "capability_id": "transfer_between_shares",
-  "capability_version": "1.0.0",
+  "capability_version": "1.1.0",
   "status": "hard_failure",
   "outputs": null,
   "outcome": null,
@@ -9,35 +9,39 @@
     "step_id": "s07-checkpoint",
     "code": "aborted_by_operator",
     "expected": "the operator to clear the blocking condition and resume",
-    "observed": "the operator aborted the run — operator confirmed the restriction is correct",
+    "observed": "the operator aborted the run — verified with supervisor - the restriction on 55555 is legitimate; restriction is correct",
     "evidence": [
-      "evidence/replay-20260827T205500Z-bbda2c/failure.png",
-      "evidence/replay-20260827T205500Z-bbda2c/final.png"
+      "evidence/replay-20260827T231938Z-ec63cd/failure.png",
+      "evidence/replay-20260827T231938Z-ec63cd/final.png"
     ]
   },
   "escalations": [
     {
       "request": {
-        "id": "cae12defb0444186bcb30851ca6906d1",
-        "run_id": "replay-20260827T205500Z-bbda2c",
+        "id": "45cd22d0326e48788d26ab3ae44fa686",
+        "run_id": "replay-20260827T231938Z-ec63cd",
         "capability_id": "transfer_between_shares",
         "step_id": "s07-checkpoint",
         "url": "http://127.0.0.1:8000/member/55555",
         "reason_code": "permission_denied",
         "message": "the flow to proceed past this declared condition | declared outcome 'record_restricted': The operator profile is not authorized for this record.",
-        "screenshot_path": "evidence/replay-20260827T205500Z-bbda2c/intervention-1.png",
-        "dom_snapshot_path": "evidence/replay-20260827T205500Z-bbda2c/intervention-1.html",
-        "requested_at": "2026-08-27T20:55:02.873284Z",
-        "deadline_at": "2026-08-27T21:00:02.873284Z"
+        "screenshot_path": "evidence/replay-20260827T231938Z-ec63cd/intervention-1.png",
+        "dom_snapshot_path": "evidence/replay-20260827T231938Z-ec63cd/intervention-1.html",
+        "requested_at": "2026-08-27T23:19:40.161070Z",
+        "deadline_at": "2026-08-27T23:24:40.161070Z"
       },
       "actions": [
         {
-          "at": "2026-08-27T20:55:03.380948Z",
-          "description": "note: operator confirmed the restriction is correct"
+          "at": "2026-08-27T23:19:58.323217Z",
+          "description": "note: verified with supervisor - the restriction on 55555 is legitimate"
+        },
+        {
+          "at": "2026-08-27T23:20:18.611851Z",
+          "description": "note: restriction is correct"
         }
       ],
       "decision": "abort",
-      "resolved_at": "2026-08-27T20:55:03.381587Z",
+      "resolved_at": "2026-08-27T23:20:18.612541Z",
       "operator": "operator"
     }
   ],
@@ -48,7 +52,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 551,
+      "duration_ms": 508,
       "note": null
     },
     {
@@ -57,7 +61,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 60,
+      "duration_ms": 54,
       "note": null
     },
     {
@@ -66,7 +70,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 776,
+      "duration_ms": 634,
       "note": null
     },
     {
@@ -75,7 +79,7 @@
       "attempts": 1,
       "resolved_via": null,
       "rung_index": null,
-      "duration_ms": 26,
+      "duration_ms": 23,
       "note": null
     },
     {
@@ -84,7 +88,7 @@
       "attempts": 1,
       "resolved_via": "name",
       "rung_index": 0,
-      "duration_ms": 118,
+      "duration_ms": 82,
       "note": null
     },
     {
@@ -93,7 +97,7 @@
       "attempts": 1,
       "resolved_via": "role",
       "rung_index": 0,
-      "duration_ms": 637,
+      "duration_ms": 604,
       "note": null
     },
     {
@@ -102,7 +106,7 @@
       "attempts": 1,
       "resolved_via": null,
       "rung_index": null,
-      "duration_ms": 532,
+      "duration_ms": 38472,
       "note": "aborted_by_operator"
     }
   ],
@@ -111,7 +115,7 @@
     "input_tokens": 0,
     "output_tokens": 0,
     "cost_usd": 0.0,
-    "wall_time_s": 3.07
+    "wall_time_s": 40.69
   },
-  "evidence_dir": "evidence/replay-20260827T205500Z-bbda2c"
+  "evidence_dir": "evidence/replay-20260827T231938Z-ec63cd"
 }

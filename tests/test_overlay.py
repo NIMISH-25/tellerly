@@ -457,6 +457,59 @@ def test_store_missing_overlay_names_the_known_tenants(tmp_path):
         store.load_overlay("transfer_between_shares", "ridgeline_east")
 
 
+# ------------------------------------------- load_resolved: the pin as default
+
+
+def _store_with_two_bases_and_a_pin(tmp_path) -> CapabilityStore:
+    """v1.0.0 and a newer v1.1.0 recording, overlay pinned to 1.0.0 — the
+    exact situation a tester creates by running discovery after cloning."""
+    store = CapabilityStore(tmp_path)
+    store.save(make_capability())
+    store.save(make_capability(version="1.1.0"))
+    store.save_overlay(
+        make_overlay(operations=[RetargetStep(step_id="sign-in", target=log_on_target())])
+    )
+    return store
+
+
+def test_tenant_without_version_replays_the_overlays_pinned_base(tmp_path):
+    """A fresh recording must NOT strand every tenant command on a version
+    error: with no explicit version, the pin selects the reviewed base — and
+    the caller is told the overlay is due a re-review."""
+    store = _store_with_two_bases_and_a_pin(tmp_path)
+
+    resolved, info = store.load_resolved("transfer_between_shares", None, "bluepeak")
+
+    assert resolved.version == "1.0.0"
+    # The overlay really applied, not just the base load:
+    assert step_by_id(resolved, "sign-in").target.ladder[0].name == "Log On"
+    assert info is not None and "1.0.0" in info and "1.1.0" in info
+
+
+def test_no_tenant_still_means_latest(tmp_path):
+    store = _store_with_two_bases_and_a_pin(tmp_path)
+    resolved, info = store.load_resolved("transfer_between_shares")
+    assert resolved.version == "1.1.0"
+    assert info is None
+
+
+def test_explicit_version_conflicting_with_the_pin_still_refuses(tmp_path):
+    """The safety guard survives the convenience: an EXPLICIT version that
+    contradicts the pin is a conflicting instruction, not a default."""
+    store = _store_with_two_bases_and_a_pin(tmp_path)
+    with pytest.raises(OverlayError, match="re-review"):
+        store.load_resolved("transfer_between_shares", "1.1.0", "bluepeak")
+
+
+def test_pin_matching_latest_is_silent(tmp_path):
+    store = CapabilityStore(tmp_path)
+    store.save(make_capability())
+    store.save_overlay(make_overlay())
+    resolved, info = store.load_resolved("transfer_between_shares", None, "bluepeak")
+    assert resolved.version == "1.0.0"
+    assert info is None
+
+
 # ----------------------------------------------- the REAL bluepeak overlay
 
 

@@ -1,0 +1,15 @@
+{"ts": "2026-08-27T23:19:38.066+00:00", "kind": "run_started", "capability": "transfer_between_shares", "version": "1.1.0", "base_url": "http://127.0.0.1:8000", "params": ["access_key", "amount", "from_share", "member_id", "operator_id", "to_share"]}
+{"ts": "2026-08-27T23:19:38.069+00:00", "kind": "entry", "url": "http://127.0.0.1:8000/login"}
+{"ts": "2026-08-27T23:19:38.736+00:00", "kind": "step_finished", "step_id": "s01-fill-the-operator-id-field", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 508, "note": null}
+{"ts": "2026-08-27T23:19:38.792+00:00", "kind": "step_finished", "step_id": "s02-fill-the-access-key-field", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 0, "duration_ms": 54, "note": null}
+{"ts": "2026-08-27T23:19:39.427+00:00", "kind": "step_finished", "step_id": "s03-click-the-sign-in-button", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 634, "note": null}
+{"ts": "2026-08-27T23:19:39.452+00:00", "kind": "step_finished", "step_id": "s04-checkpoint", "status": "ok", "attempts": 1, "resolved_via": null, "rung_index": null, "duration_ms": 23, "note": null}
+{"ts": "2026-08-27T23:19:39.535+00:00", "kind": "step_finished", "step_id": "s05-fill-the-member-no-or", "status": "ok", "attempts": 1, "resolved_via": "name", "rung_index": 0, "duration_ms": 82, "note": null}
+{"ts": "2026-08-27T23:19:40.140+00:00", "kind": "step_finished", "step_id": "s06-click-the-search-button", "status": "ok", "attempts": 1, "resolved_via": "role", "rung_index": 0, "duration_ms": 604, "note": null}
+{"ts": "2026-08-27T23:19:40.160+00:00", "kind": "outcome_detected", "outcome": "record_restricted", "code": "permission_denied", "disposition": "hard_failure", "step": "s07-checkpoint"}
+{"ts": "2026-08-27T23:19:40.263+00:00", "kind": "escalation_raised", "intervention": "45cd22d0326e48788d26ab3ae44fa686", "step": "s07-checkpoint", "code": "permission_denied", "url": "http://127.0.0.1:8000/member/55555", "deadline_at": "2026-08-27T23:24:40.161070+00:00"}
+{"ts": "2026-08-27T23:19:58.323+00:00", "kind": "human_action", "description": "note: verified with supervisor - the restriction on 55555 is legitimate"}
+{"ts": "2026-08-27T23:20:18.611+00:00", "kind": "human_action", "description": "note: restriction is correct"}
+{"ts": "2026-08-27T23:20:18.612+00:00", "kind": "escalation_resolved", "intervention": "45cd22d0326e48788d26ab3ae44fa686", "decision": "abort", "token_history": [{"from": "automation_running", "event": "escalate", "to": "paused", "decision": null}, {"from": "paused", "event": "take_control", "to": "human_control", "decision": null}, {"from": "human_control", "event": "abort", "to": "aborted", "decision": null}]}
+{"ts": "2026-08-27T23:20:18.613+00:00", "kind": "step_finished", "step_id": "s07-checkpoint", "status": "failed", "attempts": 1, "resolved_via": null, "rung_index": null, "duration_ms": 38472, "note": "aborted_by_operator"}
+{"ts": "2026-08-27T23:20:18.799+00:00", "kind": "run_finished", "status": "hard_failure"}

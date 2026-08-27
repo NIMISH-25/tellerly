@@ -29,7 +29,6 @@ from tellerly.schema import (
     Capability,
     OverlayError,
     Risk,
-    apply_overlay,
 )
 from tellerly.surface.web import PlaywrightWebSurface
 
@@ -186,21 +185,15 @@ def create_api(policy: DeploymentPolicy | None = None) -> Flask:
 
         # --- resolve the capability: unknown names are the caller addressing
         # something that does not exist — the one family of true 404s here.
+        # With a tenant and no explicit version, the overlay's pinned base is
+        # selected automatically; the store's error messages name known
+        # tenants so an agent can self-correct without a round-trip.
         try:
-            capability = store.load(capability_id, version)
+            capability, _ = store.load_resolved(capability_id, version, tenant)
         except FileNotFoundError as exc:
             return jsonify({"error": str(exc)}), 404
-        if tenant is not None:
-            try:
-                overlay = store.load_overlay(capability_id, tenant)
-            except FileNotFoundError as exc:
-                # The store's message names the known tenants — an agent can
-                # self-correct without a second discovery round-trip.
-                return jsonify({"error": str(exc)}), 404
-            try:
-                capability = apply_overlay(capability, overlay)
-            except OverlayError as exc:
-                return jsonify({"error": f"overlay '{tenant}' does not apply: {exc}"}), 400
+        except OverlayError as exc:
+            return jsonify({"error": f"overlay '{tenant}' does not apply: {exc}"}), 400
 
         # The INTERSECTION gate, exactly as the CLI builds it: the artifact
         # can only narrow the operator-owned deployment policy, never widen

@@ -176,30 +176,25 @@ def replay(
     from tellerly.kernel.operator import TerminalOperatorConsole
     from tellerly.kernel.store import CapabilityStore
     from tellerly.replay import ReplayEngine
-    from tellerly.schema import OverlayError, Tier, apply_overlay
+    from tellerly.schema import OverlayError, Tier
     from tellerly.surface.web import PlaywrightWebSurface
 
     settings = load_settings()
     store = CapabilityStore(settings.capabilities_dir)
+    # Everything downstream — the policy intersection included — sees only the
+    # RESOLVED capability. With --tenant and no --version, the overlay's
+    # pinned base is selected automatically (an overlay is reviewed against
+    # exactly one base); an explicit conflicting --version still refuses.
     try:
-        cap = store.load(capability_id, version)
+        cap, overlay_info = store.load_resolved(capability_id, version, tenant)
     except FileNotFoundError as exc:
         error_console.print(str(exc))
         raise typer.Exit(1)
-
-    if tenant is not None:
-        # Everything downstream — the policy intersection included — sees only
-        # the RESOLVED capability; the base is never partially applied.
-        try:
-            overlay = store.load_overlay(capability_id, tenant)
-        except FileNotFoundError as exc:
-            error_console.print(str(exc))
-            raise typer.Exit(1)
-        try:
-            cap = apply_overlay(cap, overlay)
-        except OverlayError as exc:
-            error_console.print(f"overlay '{tenant}' does not apply: {exc}")
-            raise typer.Exit(2)
+    except OverlayError as exc:
+        error_console.print(f"overlay '{tenant}' does not apply: {exc}")
+        raise typer.Exit(2)
+    if overlay_info:
+        console.print(f"[dim]{overlay_info}[/dim]")
 
     params: dict[str, str] = {}
     for item in inputs:

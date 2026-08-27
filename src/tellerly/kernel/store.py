@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tellerly.schema import Capability, TenantOverlay
+from tellerly.schema import Capability, TenantOverlay, apply_overlay
 
 _SEMVER = re.compile(r"\d+\.\d+\.\d+")
 _TENANT_SLUG = re.compile(r"[a-z][a-z0-9_]*")
@@ -48,7 +48,9 @@ class CapabilityStore:
         path = self.root / capability_id / f"v{chosen}.json"
         if not path.is_file():
             raise FileNotFoundError(f"no version {chosen} of '{capability_id}'")
-        return Capability.from_json(path.read_text(encoding="utf-8"))
+        # utf-8-sig: a Windows editor that saved the artifact with a BOM must
+        # not brick the catalog (plain utf-8 files decode identically).
+        return Capability.from_json(path.read_text(encoding="utf-8-sig"))
 
     # ----------------------------------------------------------- overlays
 
@@ -75,7 +77,43 @@ class CapabilityStore:
                 f"no overlay '{tenant_id}' for capability '{capability_id}' "
                 f"(known tenants: {known})"
             )
-        return TenantOverlay.from_json(path.read_text(encoding="utf-8"))
+        return TenantOverlay.from_json(path.read_text(encoding="utf-8-sig"))
+
+    def load_resolved(
+        self,
+        capability_id: str,
+        version: str | None = None,
+        tenant_id: str | None = None,
+    ) -> tuple[Capability, str | None]:
+        """Load a capability, applying the named tenant's overlay.
+
+        With a tenant and NO explicit version, the overlay's pinned
+        ``base_version`` selects the capability: an overlay is a reviewed
+        patch against exactly one base, so the pin is the correct default —
+        a fresh re-recording must not strand every tenant command on a
+        version error. The safety guard is untouched: an EXPLICIT version
+        that contradicts the pin still refuses (that is a conflicting
+        instruction, not a default), and the overlay never applies to a base
+        it was not reviewed against.
+
+        Returns ``(capability, info)`` — ``info`` is a human-readable note
+        when the pinned base is no longer the latest recording (the overlay
+        is due a re-review).
+        """
+        if tenant_id is None:
+            return self.load(capability_id, version), None
+        overlay = self.load_overlay(capability_id, tenant_id)
+        chosen = version if version is not None else overlay.base_version
+        base = self.load(capability_id, chosen)
+        info: str | None = None
+        versions = self.versions(capability_id)
+        if version is None and versions and versions[-1] != overlay.base_version:
+            info = (
+                f"tenant overlay '{tenant_id}' pins base {overlay.base_version}; "
+                f"the latest recording is {versions[-1]} — replaying the pinned "
+                "base (re-review the overlay to adopt the new one)"
+            )
+        return apply_overlay(base, overlay), info
 
     def list_overlays(self, capability_id: str) -> list[str]:
         directory = self.root / capability_id / "overlays"

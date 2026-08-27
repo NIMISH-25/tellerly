@@ -158,6 +158,13 @@ def test_store_roundtrip_and_versions(tmp_path):
     assert [c.id for c in store.list()] == [capability.id]
 
 
+def test_store_loads_an_artifact_a_windows_editor_saved_with_a_bom(tmp_path):
+    store = CapabilityStore(tmp_path)
+    path = store.save(make_capability())
+    path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())
+    assert store.load("transfer_between_shares").version == "1.0.0"
+
+
 def test_store_missing_capability_says_what_exists(tmp_path):
     store = CapabilityStore(tmp_path)
     store.save(make_capability())

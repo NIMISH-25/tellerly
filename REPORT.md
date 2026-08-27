@@ -295,6 +295,13 @@ Deliberate, with what would be built next:
   tenant instance, diffing which rungs stopped resolving.
 - **Drift telemetry aggregation** — the per-step signal is recorded on every
   run; the fleet-median comparison job does not exist yet.
+- **Record-time checkpoint stability lint** — the engine deterministically
+  refuses checkpoints pinned to input or captured-output values, and the
+  planner is instructed to assert only stable markers; a checkpoint pinned to
+  some *other* page-echoed value (a person's name) can still slip through on
+  a bad planner day and would surface as a first-replay checkpoint failure.
+  Next: verify each recorded checkpoint against a second, differently-
+  parameterized verification replay before promoting the artifact.
 - **Queueing / service split** — one process is honest for the scale of one
   vertical slice; the artifact store and result contract are the future
   service API.

@@ -82,13 +82,8 @@ contract that refuses nonzero model usage — `tests/test_replay_isolation.py`).
 Copy `.env.example` to `.env` (gitignored). `GOOGLE_API_KEY` (a Google AI
 Studio key) is needed **only** for discovery runs; everything else — tests,
 replay, escalation, the API — runs without it. The planner model defaults to
-`gemini-3.5-flash-lite` (500 requests/day and 15/min on the free tier; full
-Flash models allow only ~20/day and 5/min — pass `--throttle 12` if you pick
-one via `TELLERLY_GEMINI_MODEL`).
+`gemini-3.5-flash-lite`.
 
-Deployment safety lives in [config/policy.yaml](config/policy.yaml): the
-host and action allowlist every run is checked against, with
-`require_confirmation: true` by default. Artifacts can only narrow it.
 
 ## 3. Start the target application
 
@@ -259,6 +254,12 @@ for removing steps, weakening checkpoints, or relaxing safety; the resolved
 capability re-passes every artifact validator, and the deployment policy
 still gates the tenant host. The success run's telemetry shows the drift
 signal: relabelled controls resolve via the form-`name` fallback rung.
+
+An overlay is reviewed against exactly one base version, so `--tenant`
+without `--version` automatically replays that pinned base — even after
+you record a newer version (e.g. by re-running discovery), the tenant
+command keeps working and prints a note that the overlay is due a
+re-review. An explicit `--version` that contradicts the pin still refuses.
 
 ### 4.8 The capability API (agent-facing)
 
