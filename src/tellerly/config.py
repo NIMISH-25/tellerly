@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 _computed_root = Path(__file__).resolve().parents[2]
 REPO_ROOT = _computed_root if (_computed_root / "target_app").is_dir() else Path.cwd()
 
-DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 
 @dataclass(frozen=True)

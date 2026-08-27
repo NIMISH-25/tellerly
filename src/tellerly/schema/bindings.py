@@ -45,6 +45,19 @@ def malformed_bindings(text: str) -> list[str]:
     return bad
 
 
+def escape_regex_outside_bindings(text: str) -> str:
+    """Regex-escape everything EXCEPT the bindings, so a string verified as a
+    plain substring can be stored in a regex field meaning the same thing."""
+    parts: list[str] = []
+    last = 0
+    for match in _BINDING.finditer(text):
+        parts.append(re.escape(text[last : match.start()]))
+        parts.append(match.group(0))
+        last = match.end()
+    parts.append(re.escape(text[last:]))
+    return "".join(parts)
+
+
 def mask_bindings(text: str, placeholder: str = "BINDING") -> str:
     """Replace every valid binding with a plain placeholder.
 

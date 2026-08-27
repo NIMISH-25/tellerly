@@ -13,6 +13,7 @@ dependencies = [
     "rich>=13.7",
     "flask>=3.0",
     "python-dotenv>=1.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

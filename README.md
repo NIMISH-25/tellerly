@@ -21,24 +21,28 @@ Activate it (`.venv\Scripts\activate` on Windows, `source .venv/bin/activate`
 elsewhere), then:
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[discovery,dev]"
+```
+
+```bash
+playwright install chromium
 ```
 
 Install editable (`-e`) — the CLI locates the repo (the target app, the
 evidence and capability directories) from the source tree; a plain install
 falls back to the current working directory.
 
-Discovery-time extras (`google-genai`, `playwright`) install with
-`pip install -e ".[discovery]"` — **replay must never need them**. That will
-be enforced structurally when the replay engine lands (import-graph test,
-`llm_calls=0` assertion, stubbed-SDK replay); the mechanism is specified in
-`src/tellerly/replay/__init__.py`.
+The `discovery` extra holds `google-genai` and `playwright`. **Replay must
+never need them** — that will be enforced structurally when the replay engine
+lands (import-graph test, `llm_calls=0` assertion, stubbed-SDK replay); the
+mechanism is specified in `src/tellerly/replay/__init__.py`.
 
 Copy `.env.example` to `.env`. `GOOGLE_API_KEY` (a Google AI Studio key) is
 only needed for discovery runs; everything currently in the repo runs without
-it. The planner model defaults to `gemini-3.5-flash` — the latest stable
-Flash model, free-tier eligible with tool calling — overridable via
-`TELLERLY_GEMINI_MODEL`.
+it. The planner model defaults to `gemini-3.5-flash-lite` — 500 requests/day
+and 15/min on the free tier, where full Flash models allow only ~20/day and
+5/min (a single discovery run is ~16 calls). Override via
+`TELLERLY_GEMINI_MODEL`; pass `--throttle 12` if you pick a full Flash model.
 
 ## The mock target: Tellerly Teller Console
 
@@ -74,26 +78,65 @@ for a quiet demo, or `python -m target_app --help` for the same flags.
 
 ## Demo path
 
-Working today:
+Run the tests (they include a full end-to-end discovery against a live
+browser with a scripted planner — no API key needed):
 
 ```bash
 pytest
 ```
 
+Start the target in one terminal:
+
 ```bash
 tellerly start-app
 ```
 
-The end-state demo path (commands exist as explicit seams and exit non-zero
-until their phase lands):
+Run a real LLM discovery in another (needs `GOOGLE_API_KEY` in `.env`; the
+job's secret input resolves from the environment — for the mock console the
+access key is `demo`; the default `--throttle 4` fits the free-tier rate
+limit). PowerShell:
+
+```powershell
+$env:TELLERLY_TARGET_ACCESS_KEY = "demo"; tellerly discover --job jobs/transfer_between_shares.json
+```
+
+bash:
 
 ```bash
-tellerly discover "transfer $25 from member 101555's savings to checking"
+TELLERLY_TARGET_ACCESS_KEY=demo tellerly discover --job jobs/transfer_between_shares.json
+```
+
+The run saves a capability under `capabilities/` and full evidence
+(structured event log, per-turn screenshots, trace, result) under
+`evidence/discovery-<timestamp>/`. Inspect the catalog:
+
+```bash
+tellerly capabilities list
 ```
 
 ```bash
-tellerly replay <capability-id>
+tellerly capabilities show transfer_between_shares
 ```
+
+Deterministic replay of the saved artifact is the next build:
+
+```bash
+tellerly replay transfer_between_shares
+```
+
+### What discovery looks like under the hood
+
+The Gemini planner is never shown markup — it sees visible text plus controls
+described as human-meaningful facts (`c3: [textbox] label="Amount (USD):"`),
+referenced by ephemeral uids. It enters values as `{{input.name}}`
+placeholders, so sensitive values never reach the model **and** the recorded
+steps are parameterized by construction. At the moment each action succeeds,
+every plausible locator (role → label → form-`name` → text → anchored → CSS;
+element ids are unrepresentable) is probed against the live page and only
+locators matching exactly one element survive into the artifact. The compiler
+then attaches the job's typed contract and the app's outcome catalogue,
+derives the safety envelope from what the run actually did, and refuses to
+compile a run with no held checkpoint.
 
 ## Layout
 

@@ -1,0 +1,746 @@
+{
+  "schema_version": "1",
+  "id": "transfer_between_shares",
+  "version": "1.0.0",
+  "title": "Transfer between a member's shares",
+  "description": "Sign in, open the member record, post a share-to-share transfer through the action panel, and return the confirmation number.",
+  "app_id": "tellerly_console",
+  "entry": "/login",
+  "inputs": {
+    "operator_id": {
+      "type": "string",
+      "description": "Teller operator id.",
+      "required": true,
+      "pattern": null,
+      "example": "op-discovery",
+      "sensitivity": "none"
+    },
+    "access_key": {
+      "type": "string",
+      "description": "Operator access key.",
+      "required": true,
+      "pattern": null,
+      "example": null,
+      "sensitivity": "secret"
+    },
+    "member_id": {
+      "type": "string",
+      "description": "Member number to operate on.",
+      "required": true,
+      "pattern": "^\\d{5,6}$",
+      "example": "101555",
+      "sensitivity": "none"
+    },
+    "from_share": {
+      "type": "string",
+      "description": "Source share id, e.g. S00.",
+      "required": true,
+      "pattern": null,
+      "example": "S00",
+      "sensitivity": "none"
+    },
+    "to_share": {
+      "type": "string",
+      "description": "Destination share id, e.g. S01.",
+      "required": true,
+      "pattern": null,
+      "example": "S01",
+      "sensitivity": "none"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Dollar amount to transfer.",
+      "required": true,
+      "pattern": null,
+      "example": "25.00",
+      "sensitivity": "none"
+    }
+  },
+  "outputs": {
+    "confirmation_no": {
+      "type": "string",
+      "description": "Posting confirmation number, e.g. TL-004211."
+    }
+  },
+  "steps": [
+    {
+      "kind": "act",
+      "id": "s01-fill-the-operator-id-field",
+      "action": "fill",
+      "target": {
+        "description": "the Operator ID: field",
+        "frame": [],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "role",
+            "role": "textbox",
+            "name": "Operator ID:"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "label",
+            "label": "Operator ID:"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "name",
+            "name": "opid"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "Operator ID:",
+            "control": "input",
+            "offset": 0
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[name=\"opid\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": "opid",
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": "{{input.operator_id}}",
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s02-fill-the-access-key-field",
+      "action": "fill",
+      "target": {
+        "description": "the Access Key: field",
+        "frame": [],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "name",
+            "name": "opkey"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "Access Key:",
+            "control": "input",
+            "offset": 0
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[name=\"opkey\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": "opkey",
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": "{{input.access_key}}",
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s03-click-the-sign-in-button",
+      "action": "click",
+      "target": {
+        "description": "the Sign In button",
+        "frame": [],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "role",
+            "role": "button",
+            "name": "Sign In"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[value=\"Sign In\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": null,
+          "text_contains": "Sign In"
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": null,
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "checkpoint",
+      "id": "s04-checkpoint",
+      "description": "Signed in and on member search page",
+      "condition": {
+        "url_path_matches": "/search",
+        "text_visible": "Member Search",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s05-fill-the-member-no-or",
+      "action": "fill",
+      "target": {
+        "description": "the Member No. or Last Name: field",
+        "frame": [],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "name",
+            "name": "mbr_no"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "Member No. or Last Name:",
+            "control": "input",
+            "offset": 0
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[name=\"mbr_no\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": "mbr_no",
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": "{{input.member_id}}",
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s06-click-the-search-button",
+      "action": "click",
+      "target": {
+        "description": "the Search button",
+        "frame": [],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "role",
+            "role": "button",
+            "name": "Search"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "Member No. or Last Name:",
+            "control": "input",
+            "offset": 1
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[value=\"Search\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": null,
+          "text_contains": "Search"
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": null,
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "checkpoint",
+      "id": "s07-checkpoint",
+      "description": "Opened member record and viewing action panel",
+      "condition": {
+        "url_path_matches": "/member/{{input.member_id}}",
+        "text_visible": "Member Record",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s08-select-the-from-share-dropdown",
+      "action": "select",
+      "target": {
+        "description": "the From Share: dropdown",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "name",
+            "name": "src_share"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "From Share:",
+            "control": "select",
+            "offset": 0
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "select[name=\"src_share\"]"
+          }
+        ],
+        "verify": {
+          "control": "select",
+          "name_attr": "src_share",
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": "{{input.from_share}}",
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s09-select-the-to-share-dropdown",
+      "action": "select",
+      "target": {
+        "description": "the To Share: dropdown",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "name",
+            "name": "dst_share"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "To Share:",
+            "control": "select",
+            "offset": 0
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "select[name=\"dst_share\"]"
+          }
+        ],
+        "verify": {
+          "control": "select",
+          "name_attr": "dst_share",
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": "{{input.to_share}}",
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s10-fill-the-amount-usd-field",
+      "action": "fill",
+      "target": {
+        "description": "the Amount (USD): field",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "role",
+            "role": "textbox",
+            "name": "Amount (USD):"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "label",
+            "label": "Amount (USD):"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "name",
+            "name": "amt"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "Amount (USD):",
+            "control": "input",
+            "offset": 0
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[name=\"amt\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": "amt",
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": "{{input.amount}}",
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s11-click-the-continue-button",
+      "action": "click",
+      "target": {
+        "description": "the Continue button",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "role",
+            "role": "button",
+            "name": "Continue"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[value=\"Continue\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": null,
+          "text_contains": "Continue"
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": null,
+      "risk": "safe",
+      "timeout_s": null
+    },
+    {
+      "kind": "act",
+      "id": "s12-click-the-confirm-post-transfer",
+      "action": "click",
+      "target": {
+        "description": "the Confirm & Post Transfer button",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel/confirm"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "role",
+            "role": "button",
+            "name": "Confirm & Post Transfer"
+          },
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "css",
+            "css": "input[value=\"Confirm & Post Transfer\"]"
+          }
+        ],
+        "verify": {
+          "control": "input",
+          "name_attr": null,
+          "text_contains": "Confirm & Post Transfer"
+        },
+        "on_ambiguous": "fail"
+      },
+      "value": null,
+      "risk": "mutating",
+      "timeout_s": null
+    },
+    {
+      "kind": "checkpoint",
+      "id": "s13-checkpoint",
+      "description": "Transfer posted and confirmation number is visible",
+      "condition": {
+        "url_path_matches": "/member/{{input.member_id}}",
+        "text_visible": "TRANSFER POSTED",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "timeout_s": null
+    },
+    {
+      "kind": "read",
+      "id": "s14-read-confirmation-no",
+      "output": "confirmation_no",
+      "target": {
+        "description": "the Confirmation No. field",
+        "frame": [
+          {
+            "name": "actionpanel",
+            "url_path": "/member/{{input.member_id}}/panel/confirm"
+          }
+        ],
+        "ladder": [
+          {
+            "confidence": 1.0,
+            "note": null,
+            "strategy": "anchor",
+            "anchor_text": "Confirmation No.",
+            "control": "td",
+            "offset": 0
+          }
+        ],
+        "verify": {
+          "control": "td",
+          "name_attr": null,
+          "text_contains": null
+        },
+        "on_ambiguous": "fail"
+      },
+      "extract": {
+        "source": "text",
+        "attribute": null,
+        "pattern": null
+      },
+      "timeout_s": null
+    }
+  ],
+  "success": {
+    "url_path_matches": "/member/{{input.member_id}}",
+    "text_visible": "TRANSFER POSTED",
+    "text_absent": null,
+    "element_visible": null
+  },
+  "outcomes": [
+    {
+      "id": "no_such_member",
+      "code": "no_such_record",
+      "disposition": "business_outcome",
+      "message": "No member exists with that member number.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "No records found",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    },
+    {
+      "id": "source_share_on_hold",
+      "code": "operation_refused",
+      "disposition": "business_outcome",
+      "message": "The source share is on administrative hold.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "administrative hold",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    },
+    {
+      "id": "insufficient_funds",
+      "code": "insufficient_funds",
+      "disposition": "business_outcome",
+      "message": "The source share lacks available funds for this amount.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "Insufficient available funds",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    },
+    {
+      "id": "duplicate_submission",
+      "code": "already_processed",
+      "disposition": "business_outcome",
+      "message": "This transfer reference was already posted.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "ALREADY PROCESSED",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    },
+    {
+      "id": "maintenance_interstitial",
+      "code": "interstitial_present",
+      "disposition": "recoverable",
+      "message": "The scheduled-maintenance notice interrupted the flow.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "SCHEDULED MAINTENANCE NOTICE",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": [
+        {
+          "kind": "act",
+          "id": "dismiss-maintenance-notice",
+          "action": "click",
+          "target": {
+            "description": "the Continue to Console button",
+            "frame": [],
+            "ladder": [
+              {
+                "confidence": 1.0,
+                "note": null,
+                "strategy": "role",
+                "role": "button",
+                "name": "Continue to Console"
+              },
+              {
+                "confidence": 1.0,
+                "note": null,
+                "strategy": "css",
+                "css": "input[value='Continue to Console']"
+              }
+            ],
+            "verify": {
+              "control": "input",
+              "name_attr": null,
+              "text_contains": "Continue"
+            },
+            "on_ambiguous": "fail"
+          },
+          "value": null,
+          "risk": "safe",
+          "timeout_s": null
+        }
+      ]
+    },
+    {
+      "id": "session_expired",
+      "code": "session_expired",
+      "disposition": "recoverable",
+      "message": "The operator session expired mid-flow.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "session has expired",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    },
+    {
+      "id": "record_restricted",
+      "code": "permission_denied",
+      "disposition": "hard_failure",
+      "message": "The operator profile is not authorized for this record.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "NOT AUTHORIZED",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    },
+    {
+      "id": "ledger_fault",
+      "code": "app_fault",
+      "disposition": "hard_failure",
+      "message": "The console reported an internal posting fault.",
+      "detect": {
+        "url_path_matches": null,
+        "text_visible": "TELLERLY INTERNAL FAULT",
+        "text_absent": null,
+        "element_visible": null
+      },
+      "recovery": []
+    }
+  ],
+  "safety": {
+    "allowed_hosts": [
+      "127.0.0.1:8000"
+    ],
+    "allowed_actions": [
+      "click",
+      "fill",
+      "navigate",
+      "select"
+    ],
+    "require_confirmation": true
+  },
+  "limits": {
+    "step_timeout_s": 10.0,
+    "max_retries_per_step": 2,
+    "escalation_timeout_s": 300.0
+  },
+  "provenance": {
+    "discovery_run_id": "discovery-20260827T183726Z-8c5b11",
+    "recorded_at": "2026-08-27T18:38:52.665782Z",
+    "model": "gemini-3.5-flash-lite",
+    "discovery_economics": {
+      "llm_calls": 16,
+      "input_tokens": 76845,
+      "output_tokens": 705,
+      "cost_usd": 0.121612,
+      "wall_time_s": 86.28
+    },
+    "notes": "Recorded against http://127.0.0.1:8000"
+  }
+}

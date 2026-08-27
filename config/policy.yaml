@@ -1,0 +1,8 @@
+# Deployment guardrails — the outer envelope every run (discovery and replay)
+# is checked against. Operator-owned: artifacts can only narrow this, never
+# widen it, and confirmation can only be turned ON by an artifact.
+allowed_hosts:
+  - "127.0.0.1:8000"
+  - "localhost:8000"
+allowed_actions: [navigate, click, fill, select, press]
+require_confirmation: true

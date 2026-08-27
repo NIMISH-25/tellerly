@@ -1,0 +1,77 @@
+{
+  "app_id": "tellerly_console",
+  "comment": "Per-APP outcome catalogue: every capability compiled against this app inherits these, so every flow answers identically. Dispositions must match the fleet taxonomy.",
+  "outcomes": [
+    {
+      "id": "no_such_member",
+      "code": "no_such_record",
+      "disposition": "business_outcome",
+      "message": "No member exists with that member number.",
+      "detect": {"text_visible": "No records found"}
+    },
+    {
+      "id": "source_share_on_hold",
+      "code": "operation_refused",
+      "disposition": "business_outcome",
+      "message": "The source share is on administrative hold.",
+      "detect": {"text_visible": "administrative hold"}
+    },
+    {
+      "id": "insufficient_funds",
+      "code": "insufficient_funds",
+      "disposition": "business_outcome",
+      "message": "The source share lacks available funds for this amount.",
+      "detect": {"text_visible": "Insufficient available funds"}
+    },
+    {
+      "id": "duplicate_submission",
+      "code": "already_processed",
+      "disposition": "business_outcome",
+      "message": "This transfer reference was already posted.",
+      "detect": {"text_visible": "ALREADY PROCESSED"}
+    },
+    {
+      "id": "maintenance_interstitial",
+      "code": "interstitial_present",
+      "disposition": "recoverable",
+      "message": "The scheduled-maintenance notice interrupted the flow.",
+      "detect": {"text_visible": "SCHEDULED MAINTENANCE NOTICE"},
+      "recovery": [
+        {
+          "kind": "act",
+          "id": "dismiss-maintenance-notice",
+          "action": "click",
+          "target": {
+            "description": "the Continue to Console button",
+            "ladder": [
+              {"strategy": "role", "role": "button", "name": "Continue to Console", "confidence": 1.0},
+              {"strategy": "css", "css": "input[value='Continue to Console']", "confidence": 1.0}
+            ],
+            "verify": {"control": "input", "text_contains": "Continue"}
+          }
+        }
+      ]
+    },
+    {
+      "id": "session_expired",
+      "code": "session_expired",
+      "disposition": "recoverable",
+      "message": "The operator session expired mid-flow.",
+      "detect": {"text_visible": "session has expired"}
+    },
+    {
+      "id": "record_restricted",
+      "code": "permission_denied",
+      "disposition": "hard_failure",
+      "message": "The operator profile is not authorized for this record.",
+      "detect": {"text_visible": "NOT AUTHORIZED"}
+    },
+    {
+      "id": "ledger_fault",
+      "code": "app_fault",
+      "disposition": "hard_failure",
+      "message": "The console reported an internal posting fault.",
+      "detect": {"text_visible": "TELLERLY INTERNAL FAULT"}
+    }
+  ]
+}

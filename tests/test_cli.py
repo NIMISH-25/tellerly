@@ -20,7 +20,12 @@ def test_help_lists_the_seams():
         assert command in result.output
 
 
-def test_unbuilt_commands_exit_nonzero_and_say_why():
-    result = runner.invoke(app, ["discover", "some goal"])
+def test_replay_seam_exits_nonzero_and_says_why():
+    result = runner.invoke(app, ["replay", "some_capability"])
     assert result.exit_code == 2
     assert "not built yet" in result.output
+
+
+def test_discover_requires_a_job_spec():
+    result = runner.invoke(app, ["discover"])
+    assert result.exit_code == 2  # typer: missing required --job

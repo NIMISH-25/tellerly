@@ -1,0 +1,43 @@
+{
+  "capability_id": "transfer_between_shares",
+  "title": "Transfer between a member's shares",
+  "description": "Sign in, open the member record, post a share-to-share transfer through the action panel, and return the confirmation number.",
+  "goal": "Sign in to the teller console, open member {{input.member_id}}'s record, transfer ${{input.amount}} from share {{input.from_share}} to share {{input.to_share}} using the action panel, confirm the posting, and read back the confirmation number.",
+  "app_id": "tellerly_console",
+  "entry": "/login",
+  "inputs": {
+    "operator_id": {
+      "description": "Teller operator id.",
+      "value": "op-discovery"
+    },
+    "access_key": {
+      "description": "Operator access key.",
+      "sensitivity": "secret",
+      "value_env": "TELLERLY_TARGET_ACCESS_KEY"
+    },
+    "member_id": {
+      "description": "Member number to operate on.",
+      "pattern": "^\\d{5,6}$",
+      "value": "101555"
+    },
+    "from_share": {
+      "description": "Source share id, e.g. S00.",
+      "value": "S00"
+    },
+    "to_share": {
+      "description": "Destination share id, e.g. S01.",
+      "value": "S01"
+    },
+    "amount": {
+      "description": "Dollar amount to transfer.",
+      "type": "number",
+      "value": "25.00"
+    }
+  },
+  "outputs": {
+    "confirmation_no": {
+      "type": "string",
+      "description": "Posting confirmation number, e.g. TL-004211."
+    }
+  }
+}
